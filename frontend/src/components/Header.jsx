@@ -1,25 +1,128 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../firebase/firebase";
+import { signOut } from "firebase/auth";
+import { useAuthState } from "react-firebase-hooks/auth";
 
-const Header = () => (
-  <header className="bg-blue-600 text-white p-4">
-    <nav>
-      <ul className="flex space-x-4">
+const Header = () => {
+  const [user] = useAuthState(auth);
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const NavLinks = () => (
+    <>
+      <li>
+        <Link to="/" className="hover:text-blue-200 transition duration-300">
+          Dashboard
+        </Link>
+      </li>
+      <li>
+        <Link
+          to="/gigs"
+          className="hover:text-blue-200 transition duration-300"
+        >
+          Gigs
+        </Link>
+      </li>
+      <li>
+        <Link
+          to="/members"
+          className="hover:text-blue-200 transition duration-300"
+        >
+          Members
+        </Link>
+      </li>
+      {user ? (
         <li>
-          <Link to="/">Dashboard</Link>
+          <button
+            onClick={handleLogout}
+            className="hover:text-blue-200 transition duration-300"
+          >
+            Logout
+          </button>
         </li>
+      ) : (
         <li>
-          <Link to="/gigs">Gigs</Link>
+          <Link
+            to="/login"
+            className="hover:text-blue-200 transition duration-300"
+          >
+            Login
+          </Link>
         </li>
-        <li>
-          <Link to="/members">Members</Link>
-        </li>
-        <li>
-          <Link to="/equipment">Equipment</Link>
-        </li>
-      </ul>
-    </nav>
-  </header>
-);
+      )}
+    </>
+  );
+
+  return (
+    <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center">
+            <svg
+              className="h-8 w-8 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+              />
+            </svg>
+            <span className="font-bold text-xl">Band App</span>
+          </div>
+          <nav className="hidden md:block">
+            <ul className="flex space-x-6">
+              <NavLinks />
+            </ul>
+          </nav>
+          <div className="md:hidden">
+            <button onClick={toggleMobileMenu} className="focus:outline-none">
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* Mobile menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden">
+          <nav className="px-2 pt-2 pb-4">
+            <ul className="space-y-1">
+              <NavLinks />
+            </ul>
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+};
 
 export default Header;

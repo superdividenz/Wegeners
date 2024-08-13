@@ -1,38 +1,43 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { db } from "../firebase/firebase";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 import GigListItem from "../components/GigListItem";
 import BookingForm from "../components/BookingForm";
 
 const GigManagement = () => {
-  // You would typically fetch this data from your Firebase backend
-  const gigs = [
-    { venue: "Rock Arena", date: "2024-08-15", time: "20:00", payment: 1000 },
-    { venue: "Jazz Club", date: "2024-08-20", time: "21:00", payment: 800 },
-    {
-      venue: "Music Festival",
-      date: "2024-09-01",
-      time: "14:00",
-      payment: 1500,
-    },
-  ];
+  const [gigs, setGigs] = useState([]);
 
-  const handleBooking = (newGig) => {
-    // Here you would typically save the new gig to your Firebase backend
-    console.log("New gig booked:", newGig);
+  useEffect(() => {
+    const fetchGigs = async () => {
+      const gigsCollection = collection(db, "gigs");
+      const gigSnapshot = await getDocs(gigsCollection);
+      const gigList = gigSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setGigs(gigList);
+    };
+
+    fetchGigs();
+  }, []);
+
+  const addGig = async (newGig) => {
+    try {
+      const docRef = await addDoc(collection(db, "gigs"), newGig);
+      console.log("Document written with ID: ", docRef.id);
+      // Refresh the gig list or add the new gig to the state
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
   };
 
   return (
-    <div className="gig-management">
+    <div>
       <h1>Gig Management</h1>
-      <section>
-        <h2>All Gigs</h2>
-        {gigs.map((gig, index) => (
-          <GigListItem key={index} {...gig} />
-        ))}
-      </section>
-      <section>
-        <h2>Book a New Gig</h2>
-        <BookingForm onSubmit={handleBooking} />
-      </section>
+      <BookingForm onSubmit={addGig} />
+      {gigs.map((gig) => (
+        <GigListItem key={gig.id} {...gig} />
+      ))}
     </div>
   );
 };
