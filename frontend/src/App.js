@@ -2,8 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
 
 // Import your components
-import Header from './components/Header';
-import Footer from './components/Footer';
+import Header from './component/Header';
+import Footer from './component/Footer';
 
 // Import your screen components
 import Dashboard from './screens/Dashboard';
