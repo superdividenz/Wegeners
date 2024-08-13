@@ -49,3 +49,82 @@
   .firebaserc
   .gitignore
   README.md
+
+Database
+
+Users Collection
+Document ID: Auto-generated
+Fields:
+uid (string): User's Firebase Auth UID
+email (string)
+displayName (string)
+role (string): "admin", "manager", "member"
+dateJoined (timestamp)
+
+Bands Collection
+Document ID: Auto-generated
+Fields:
+name (string)
+genre (string)
+foundedDate (timestamp)
+bio (string)
+imageUrl (string)
+
+Members Collection
+Document ID: Auto-generated
+Fields:
+userId (string): Reference to Users collection
+bandId (string): Reference to Bands collection
+name (string)
+instrument (string)
+joinDate (timestamp)
+bio (string)
+imageUrl (string)
+
+Gigs Collection
+Document ID: Auto-generated
+Fields:
+bandId (string): Reference to Bands collection
+venue (string)
+date (timestamp)
+time (string)
+duration (number): in minutes
+payment (number)
+status (string): "upcoming", "completed", "cancelled"
+notes (string)
+
+Equipment Collection
+Document ID: Auto-generated
+Fields:
+bandId (string): Reference to Bands collection
+name (string)
+type (string): e.g., "instrument", "audio gear", "transportation"
+brand (string)
+model (string)
+purchaseDate (timestamp)
+lastMaintenanceDate (timestamp)
+condition (string): "excellent", "good", "fair", "poor"
+notes (string)
+
+Setlists Collection
+Document ID: Auto-generated
+Fields:
+bandId (string): Reference to Bands collection
+name (string)
+songs (array of maps):
+title (string)
+duration (number): in seconds
+order (number)
+createdDate (timestamp)
+lastUsedDate (timestamp)
+
+Finances Collection
+Document ID: Auto-generated
+Fields:
+bandId (string): Reference to Bands collection
+type (string): "income" or "expense"
+amount (number)
+date (timestamp)
+category (string): e.g., "gig payment", "equipment purchase", "studio time"
+description (string)
+relatedGigId (string, optional): Reference to Gigs collection
