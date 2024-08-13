@@ -3,11 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useAuthState } from "react-firebase-hooks/auth";
+import CalendarComponent from "./Calendar"; // Ensure this path is correct
 
 const Header = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false); // State to toggle calendar visibility
 
   const handleLogout = async () => {
     try {
@@ -20,6 +22,10 @@ const Header = () => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const toggleCalendar = () => {
+    setIsCalendarOpen(!isCalendarOpen);
   };
 
   const NavLinks = () => (
@@ -44,6 +50,14 @@ const Header = () => {
         >
           Members
         </Link>
+      </li>
+      <li>
+        <button
+          onClick={toggleCalendar}
+          className="hover:text-blue-200 transition duration-300"
+        >
+          Calendar
+        </button>
       </li>
       {user ? (
         <li>
@@ -119,6 +133,12 @@ const Header = () => {
               <NavLinks />
             </ul>
           </nav>
+        </div>
+      )}
+      {/* Calendar Component */}
+      {isCalendarOpen && (
+        <div className="bg-white p-4 rounded shadow mt-4">
+          <CalendarComponent />
         </div>
       )}
     </header>
