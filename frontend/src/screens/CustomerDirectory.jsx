@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import CustomerCard from "../components/CustomerCard"; // Assuming CustomerCard is the correct component
+import CustomerCard from "../components/CustomerCard";
 
 const CustomerDirectory = () => {
   const [customers, setCustomers] = useState([]);
