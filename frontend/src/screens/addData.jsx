@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 import Papa from "papaparse";
 
 const AddData = () => {
@@ -8,10 +14,12 @@ const AddData = () => {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm();
   const [bulkData, setBulkData] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
 
   const onSubmit = async (data) => {
     try {
@@ -23,12 +31,21 @@ const AddData = () => {
         timestamp: new Date().toISOString(),
       };
 
-      await addDoc(jobsRef, jobData);
-      console.log("Job added successfully");
+      if (selectedJob) {
+        // Update existing job
+        await updateDoc(doc(db, "jobs", selectedJob.id), jobData);
+        console.log("Job updated successfully");
+      } else {
+        // Add new job
+        await addDoc(jobsRef, jobData);
+        console.log("Job added successfully");
+      }
+
       reset();
       setIsModalOpen(false);
+      setSelectedJob(null);
     } catch (error) {
-      console.error("Error adding job: ", error);
+      console.error("Error adding/updating job: ", error);
     }
   };
 
@@ -80,6 +97,15 @@ const AddData = () => {
     }
   };
 
+  const handleEditJob = (job) => {
+    setSelectedJob(job);
+    setIsModalOpen(true);
+    // Populate form fields with job data
+    Object.keys(job).forEach((key) => {
+      setValue(key, job[key]);
+    });
+  };
+
   return (
     <div className="max-w-md mx-auto mt-10 px-4">
       <button
@@ -110,11 +136,29 @@ const AddData = () => {
         )}
       </div>
 
+      {/* Example job list */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold mb-4">Upcoming Jobs</h2>
+        {/* Replace with dynamic job list */}
+        <ul>
+          <li
+            onClick={() =>
+              handleEditJob({ id: "1", firstName: "John", lastName: "Doe" })
+            }
+          >
+            John Doe
+          </li>
+          {/* Add more jobs here */}
+        </ul>
+      </div>
+
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4">
           <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] flex flex-col">
             <div className="p-6 overflow-y-auto flex-grow">
-              <h2 className="text-xl font-bold mb-4">Add Single Entry</h2>
+              <h2 className="text-xl font-bold mb-4">
+                {selectedJob ? "Edit Job" : "Add Single Entry"}
+              </h2>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
                   <input
@@ -151,7 +195,11 @@ const AddData = () => {
                 <div className="flex justify-end space-x-2">
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setSelectedJob(null);
+                      reset();
+                    }}
                     className="bg-gray-300 text-black py-2 px-4 rounded-md hover:bg-gray-400 transition duration-300"
                   >
                     Cancel
@@ -160,7 +208,7 @@ const AddData = () => {
                     type="submit"
                     className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300"
                   >
-                    Submit
+                    {selectedJob ? "Update" : "Submit"}
                   </button>
                 </div>
               </form>
