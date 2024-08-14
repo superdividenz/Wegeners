@@ -101,11 +101,16 @@ const DashboardAndJobManagement = () => {
     );
   };
 
-  const jobDates = jobs.map((job) => {
-    const jobDate =
-      job.date instanceof Date ? job.date : new Date(job.date.seconds * 1000);
-    return jobDate.toDateString();
-  });
+  const jobDates = jobs
+    .map((job) => {
+      if (job.date instanceof Date) {
+        return job.date.toDateString();
+      } else if (job.date && job.date.seconds) {
+        return new Date(job.date.seconds * 1000).toDateString();
+      }
+      return null;
+    })
+    .filter(Boolean);
 
   if (loading) {
     return <div className="text-center mt-8">Loading...</div>;
@@ -117,7 +122,7 @@ const DashboardAndJobManagement = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <style>{highlightClass}</style> {/* Inject highlight styles */}
+      <style>{highlightClass}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
         <button
@@ -153,10 +158,10 @@ const DashboardAndJobManagement = () => {
                 >
                   {job.date instanceof Date
                     ? job.date.toLocaleDateString()
-                    : new Date(
-                        job.date.seconds * 1000
-                      ).toLocaleDateString()}{" "}
-                  {job.lastName} - {job.address}
+                    : job.date && job.date.seconds
+                    ? new Date(job.date.seconds * 1000).toLocaleDateString()
+                    : "No date available"}{" "}
+                  {job.lastName || "N/A"} - {job.address || "N/A"}
                 </li>
               ))}
             </ul>
@@ -170,37 +175,41 @@ const DashboardAndJobManagement = () => {
           <div>
             <h2 className="text-xl font-bold mb-4">Job Details</h2>
             <p>
-              <strong>First Name:</strong> {selectedJob.firstName}
+              <strong>First Name:</strong> {selectedJob.firstName || "N/A"}
             </p>
             <p>
-              <strong>Last Name:</strong> {selectedJob.lastName}
+              <strong>Last Name:</strong> {selectedJob.lastName || "N/A"}
             </p>
             <p>
-              <strong>Email:</strong> {selectedJob.email}
+              <strong>Email:</strong> {selectedJob.email || "N/A"}
             </p>
             <p>
-              <strong>Address:</strong> {selectedJob.address}
+              <strong>Address:</strong> {selectedJob.address || "N/A"}
             </p>
-            <StyledButton onClick={() => openInGoogleMaps(selectedJob.address)}>
-              <FaMapMarkerAlt />
-              View in Google Maps
-            </StyledButton>
+            {selectedJob.address && (
+              <StyledButton
+                onClick={() => openInGoogleMaps(selectedJob.address)}
+              >
+                <FaMapMarkerAlt />
+                View in Google Maps
+              </StyledButton>
+            )}
             <p>
-              <strong>Time:</strong> {selectedJob.time}
+              <strong>Time:</strong> {selectedJob.time || "N/A"}
             </p>
             <p>
               <strong>Date:</strong>{" "}
               {selectedJob.date instanceof Date
                 ? selectedJob.date.toLocaleDateString()
-                : new Date(
-                    selectedJob.date.seconds * 1000
-                  ).toLocaleDateString()}
+                : selectedJob.date && selectedJob.date.seconds
+                ? new Date(selectedJob.date.seconds * 1000).toLocaleDateString()
+                : "No date available"}
             </p>
             <p>
-              <strong>Description:</strong> {selectedJob.description}
+              <strong>Description:</strong> {selectedJob.description || "N/A"}
             </p>
             <p>
-              <strong>Yardage:</strong> {selectedJob.yardage}
+              <strong>Yardage:</strong> {selectedJob.yardage || "N/A"}
             </p>
           </div>
         ) : (
