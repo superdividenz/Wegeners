@@ -32,6 +32,16 @@ const Header = () => {
           Dashboard
         </Link>
       </li>
+      {user && (
+        <li>
+          <Link
+            to="/add-data"
+            className="hover:text-blue-200 transition duration-300"
+          >
+            Add Data
+          </Link>
+        </li>
+      )}
       {user ? (
         <li>
           <button
