@@ -4,9 +4,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase/firebase';
 import Header from './components/Header';
 import Login from './components/Login';
-import Dashboard from './screens/Dashboard';
-import GigManagement from './screens/GigManagement';
-import MemberDirectory from './screens/MemberDirectory';
+import DashboardAndJobManagement from './screens/DashboardAndJobManagement'; // Import the combined component
 
 function App() {
   const [user, loading] = useAuthState(auth);
@@ -21,18 +19,7 @@ function App() {
         <Header />
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
-          <Route 
-            path="/dashboard" 
-            element={user ? <Dashboard /> : <Navigate to="/login" />} 
-          />
-          <Route 
-            path="/gigs" 
-            element={user ? <GigManagement /> : <Navigate to="/login" />} 
-          />
-          <Route 
-            path="/members" 
-            element={user ? <MemberDirectory /> : <Navigate to="/login" />} 
-          />
+          <Route path="/dashboard" element={user ? <DashboardAndJobManagement /> : <Navigate to="/login" />} />
           <Route path="/" element={<Navigate to={user ? "/dashboard" : "/login"} />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

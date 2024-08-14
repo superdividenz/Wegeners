@@ -3,10 +3,14 @@ import React, { useState } from "react";
 
 const BookingForm = ({ onSubmit }) => {
   const [formData, setFormData] = useState({
-    venue: "",
+    firstName: "",
+    lastName: "",
+    address: "",
+    email: "",
     date: "",
     time: "",
     description: "",
+    yardage: "", // Add yardage field to the state
   });
 
   const handleChange = (e) => {
@@ -20,7 +24,16 @@ const BookingForm = ({ onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({ venue: "", date: "", time: "", description: "" });
+    setFormData({
+      firstName: "",
+      lastName: "",
+      address: "",
+      email: "",
+      date: "",
+      time: "",
+      description: "",
+      yardage: "", // Reset yardage field
+    });
   };
 
   return (
@@ -31,17 +44,71 @@ const BookingForm = ({ onSubmit }) => {
       <div className="mb-4">
         <label
           className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="venue"
+          htmlFor="firstName"
         >
-          Venue
+          First Name
         </label>
         <input
           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="venue"
+          id="firstName"
           type="text"
-          placeholder="Venue"
-          name="venue"
-          value={formData.venue}
+          placeholder="First Name"
+          name="firstName"
+          value={formData.firstName}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="lastName"
+        >
+          Last Name
+        </label>
+        <input
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          id="lastName"
+          type="text"
+          placeholder="Last Name"
+          name="lastName"
+          value={formData.lastName}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="address"
+        >
+          Address
+        </label>
+        <input
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          id="address"
+          type="text"
+          placeholder="Address"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          required
+        />
+      </div>
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="email"
+        >
+          Email
+        </label>
+        <input
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          id="email"
+          type="email"
+          placeholder="Email"
+          name="email"
+          value={formData.email}
           onChange={handleChange}
           required
         />
@@ -80,6 +147,24 @@ const BookingForm = ({ onSubmit }) => {
           required
         />
       </div>
+      <div className="mb-4">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="yardage"
+        >
+          Yardage
+        </label>
+        <input
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          id="yardage"
+          type="number"
+          placeholder="Yardage"
+          name="yardage"
+          value={formData.yardage}
+          onChange={handleChange}
+          required
+        />
+      </div>
       <div className="mb-6">
         <label
           className="block text-gray-700 text-sm font-bold mb-2"
@@ -90,7 +175,7 @@ const BookingForm = ({ onSubmit }) => {
         <textarea
           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           id="description"
-          placeholder="Gig description"
+          placeholder="Description"
           name="description"
           value={formData.description}
           onChange={handleChange}
@@ -101,7 +186,7 @@ const BookingForm = ({ onSubmit }) => {
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           type="submit"
         >
-          Add Gig
+          Submit
         </button>
       </div>
     </form>

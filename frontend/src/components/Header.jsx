@@ -3,13 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useAuthState } from "react-firebase-hooks/auth";
-import CalendarComponent from "./Calendar"; // Ensure this path is correct
 
 const Header = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false); // State to toggle calendar visibility
 
   const handleLogout = async () => {
     try {
@@ -24,40 +22,15 @@ const Header = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const toggleCalendar = () => {
-    setIsCalendarOpen(!isCalendarOpen);
-  };
-
   const NavLinks = () => (
     <>
       <li>
-        <Link to="/" className="hover:text-blue-200 transition duration-300">
+        <Link
+          to="/dashboard"
+          className="hover:text-blue-200 transition duration-300"
+        >
           Dashboard
         </Link>
-      </li>
-      <li>
-        <Link
-          to="/gigs"
-          className="hover:text-blue-200 transition duration-300"
-        >
-          Gigs
-        </Link>
-      </li>
-      <li>
-        <Link
-          to="/members"
-          className="hover:text-blue-200 transition duration-300"
-        >
-          Members
-        </Link>
-      </li>
-      <li>
-        <button
-          onClick={toggleCalendar}
-          className="hover:text-blue-200 transition duration-300"
-        >
-          Calendar
-        </button>
       </li>
       {user ? (
         <li>
@@ -99,7 +72,7 @@ const Header = () => {
                 d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
               />
             </svg>
-            <span className="font-bold text-xl">Band App</span>
+            <span className="font-bold text-xl">Service App</span>
           </div>
           <nav className="hidden md:block">
             <ul className="flex space-x-6">
@@ -133,12 +106,6 @@ const Header = () => {
               <NavLinks />
             </ul>
           </nav>
-        </div>
-      )}
-      {/* Calendar Component */}
-      {isCalendarOpen && (
-        <div className="bg-white p-4 rounded shadow mt-4">
-          <CalendarComponent />
         </div>
       )}
     </header>
