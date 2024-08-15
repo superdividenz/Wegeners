@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase/firebase";
-import { collection, addDoc, getDocs, Timestamp } from "firebase/firestore";
+import { collection, getDocs, Timestamp } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "../components/Modal";
-import BookingForm from "../components/BookingForm";
 import styled from "styled-components";
 import { FaMapMarkerAlt } from "react-icons/fa";
 
@@ -42,7 +41,7 @@ const highlightClass = `
   }
 `;
 
-const DashboardAndJobManagement = () => {
+const Dashboard = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -69,22 +68,6 @@ const DashboardAndJobManagement = () => {
       setError("Failed to load jobs. Please try again later.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const addJob = async (newJob) => {
-    try {
-      const jobWithTimestamp = {
-        ...newJob,
-        date: Timestamp.fromDate(new Date(newJob.date)),
-      };
-      const docRef = await addDoc(collection(db, "jobs"), jobWithTimestamp);
-      console.log("Document written with ID: ", docRef.id);
-      await fetchJobs(); // Refresh the job list
-      setIsModalOpen(false); // Close the modal after adding a job
-    } catch (error) {
-      console.error("Error adding job:", error);
-      setError("Failed to add job. Please try again.");
     }
   };
 
@@ -125,12 +108,6 @@ const DashboardAndJobManagement = () => {
       <style>{highlightClass}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Add New Job
-        </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-6">
@@ -171,7 +148,7 @@ const DashboardAndJobManagement = () => {
         </div>
       </div>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        {selectedJob ? (
+        {selectedJob && (
           <div>
             <h2 className="text-xl font-bold mb-4">Job Details</h2>
             <p>
@@ -212,12 +189,10 @@ const DashboardAndJobManagement = () => {
               <strong>Yardage:</strong> {selectedJob.yardage || "N/A"}
             </p>
           </div>
-        ) : (
-          <BookingForm onSubmit={addJob} />
         )}
       </Modal>
     </div>
   );
 };
 
-export default DashboardAndJobManagement;
+export default Dashboard;

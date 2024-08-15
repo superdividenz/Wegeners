@@ -4,7 +4,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './firebase/firebase';
 import Header from './components/Header';
 import Login from './components/Login';
-import DashboardAndJobManagement from './screens/DashboardAndJobManagement';
+import Dashboard from './screens/Dashboard';
 import AddData from './screens/addData'; // Make sure this path is correct
 
 function App() {
@@ -32,7 +32,7 @@ function App() {
             path="/dashboard" 
             element={
               <ProtectedRoute>
-                <DashboardAndJobManagement />
+                <Dashboard />
               </ProtectedRoute>
             } 
           />

@@ -38,7 +38,7 @@ const Header = () => {
             to="/add-data"
             className="hover:text-blue-200 transition duration-300"
           >
-            Add Data
+            Customer
           </Link>
         </li>
       )}
