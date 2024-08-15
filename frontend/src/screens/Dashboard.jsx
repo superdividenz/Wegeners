@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase/firebase";
-import { collection, getDocs, Timestamp } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "../components/Modal";
@@ -84,16 +84,26 @@ const Dashboard = () => {
     );
   };
 
+  // Convert job date strings to Date objects for comparison
   const jobDates = jobs
     .map((job) => {
-      if (job.date instanceof Date) {
-        return job.date.toDateString();
-      } else if (job.date && job.date.seconds) {
-        return new Date(job.date.seconds * 1000).toDateString();
+      if (job.date) {
+        const [month, day, year] = job.date.split("/");
+        return new Date(year, month - 1, day).toDateString();
       }
       return null;
     })
     .filter(Boolean);
+
+  // Filter jobs for the selected date
+  const jobsForSelectedDate = jobs.filter((job) => {
+    if (job.date) {
+      const [month, day, year] = job.date.split("/");
+      const jobDate = new Date(year, month - 1, day).toDateString();
+      return jobDate === date.toDateString();
+    }
+    return false;
+  });
 
   if (loading) {
     return <div className="text-center mt-8">Loading...</div>;
@@ -115,7 +125,7 @@ const Dashboard = () => {
           <Calendar
             onChange={setDate}
             value={date}
-            tileClassName={({ date }) => {
+            tileClassName={({ date, view }) => {
               const dateString = date.toDateString();
               return jobDates.includes(dateString) ? "highlight" : null;
             }}
@@ -124,26 +134,23 @@ const Dashboard = () => {
         </div>
 
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Upcoming Jobs</h2>
-          {jobs.length > 0 ? (
+          <h2 className="text-xl font-semibold mb-4">
+            Jobs on {date.toLocaleDateString()}
+          </h2>
+          {jobsForSelectedDate.length > 0 ? (
             <ul>
-              {jobs.map((job) => (
+              {jobsForSelectedDate.map((job) => (
                 <li
                   key={job.id}
                   className="mb-2 cursor-pointer"
                   onClick={() => handleJobClick(job)}
                 >
-                  {job.date instanceof Date
-                    ? job.date.toLocaleDateString()
-                    : job.date && job.date.seconds
-                    ? new Date(job.date.seconds * 1000).toLocaleDateString()
-                    : "No date available"}{" "}
                   {job.lastName || "N/A"} - {job.address || "N/A"}
                 </li>
               ))}
             </ul>
           ) : (
-            <p>No jobs scheduled.</p>
+            <p>No jobs scheduled for this date.</p>
           )}
         </div>
       </div>
@@ -175,12 +182,7 @@ const Dashboard = () => {
               <strong>Time:</strong> {selectedJob.time || "N/A"}
             </p>
             <p>
-              <strong>Date:</strong>{" "}
-              {selectedJob.date instanceof Date
-                ? selectedJob.date.toLocaleDateString()
-                : selectedJob.date && selectedJob.date.seconds
-                ? new Date(selectedJob.date.seconds * 1000).toLocaleDateString()
-                : "No date available"}
+              <strong>Date:</strong> {selectedJob.date || "No date available"}
             </p>
             <p>
               <strong>Description:</strong> {selectedJob.description || "N/A"}

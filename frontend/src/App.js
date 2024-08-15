@@ -5,7 +5,7 @@ import { auth } from './firebase/firebase';
 import Header from './components/Header';
 import Login from './components/Login';
 import Dashboard from './screens/Dashboard';
-import AddData from './screens/addData'; // Make sure this path is correct
+import AddData from './screens/addData'; 
 
 function App() {
   const [user, loading] = useAuthState(auth);

@@ -8,15 +8,17 @@ import {
   where,
   updateDoc,
   doc,
-  addDoc,
+  setDoc,
 } from "firebase/firestore";
 import Papa from "papaparse";
+import { v4 as uuidv4 } from "uuid"; // Import the uuid library
 
 const AddData = () => {
   const { register, handleSubmit, setValue, reset } = useForm();
   const [searchLastName, setSearchLastName] = useState("");
   const [matchingJobs, setMatchingJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
 
   const handleSearch = async (e) => {
     const input = e.target.value;
@@ -44,7 +46,7 @@ const AddData = () => {
   const handleJobClick = (job) => {
     setSelectedJob(job);
     Object.keys(job).forEach((key) => {
-      if (key !== "id") setValue(key, job[key]);
+      setValue(key, job[key]);
     });
   };
 
@@ -72,14 +74,21 @@ const AddData = () => {
     Papa.parse(file, {
       header: true,
       complete: async (results) => {
+        console.log("Parsed CSV data:", results.data); // Log parsed data
         const db = getFirestore();
-        const jobsRef = collection(db, "jobs");
 
         for (const row of results.data) {
           try {
-            await addDoc(jobsRef, row);
+            // Generate a unique ID if 'id' is missing
+            const docId = row.id || uuidv4();
+            const docRef = doc(db, "jobs", docId);
+            await setDoc(docRef, { ...row, id: docId }); // Store ID in the document
           } catch (error) {
-            console.error("Error adding job from CSV: ", error);
+            console.error(
+              "Error adding job from CSV:",
+              error.message,
+              error.stack
+            );
           }
         }
         alert("CSV data uploaded successfully");
@@ -101,6 +110,21 @@ const AddData = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleAddJob = async (data) => {
+    const db = getFirestore();
+    const docId = uuidv4(); // Generate a unique ID for the new job
+    const docRef = doc(db, "jobs", docId);
+
+    try {
+      await setDoc(docRef, { ...data, id: docId }); // Store ID in the document
+      alert("Job added successfully");
+      setIsModalOpen(false); // Close the modal after adding the job
+      reset(); // Reset the form fields
+    } catch (error) {
+      console.error("Error adding job: ", error);
+    }
   };
 
   return (
@@ -199,8 +223,82 @@ const AddData = () => {
           >
             Download Data
           </button>
+          <button
+            onClick={() => setIsModalOpen(true)} // Open the modal on click
+            className="bg-purple-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-purple-600 transition duration-200 w-full"
+          >
+            Add Job Manually
+          </button>
         </div>
       </div>
+
+      {/* Modal for adding a job manually */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
+            <h3 className="font-bold text-lg text-gray-700 mb-4">
+              Add New Job
+            </h3>
+            <form onSubmit={handleSubmit(handleAddJob)} className="space-y-4">
+              <input
+                {...register("firstName", { required: true })}
+                placeholder="First Name"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("lastName", { required: true })}
+                placeholder="Last Name"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("email", { required: true })}
+                placeholder="Email"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("address", { required: true })}
+                placeholder="Address"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("date", { required: true })}
+                type="date"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("time", { required: true })}
+                type="time"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("yardage", { required: true })}
+                placeholder="Yardage"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <textarea
+                {...register("description", { required: true })}
+                placeholder="Description"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)} // Close the modal
+                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
+                >
+                  Add Job
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
