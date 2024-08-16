@@ -145,7 +145,7 @@ const Dashboard = () => {
                   className="mb-2 cursor-pointer"
                   onClick={() => handleJobClick(job)}
                 >
-                  {job.lastName || "N/A"} - {job.address || "N/A"}
+                  {job.date || "N/A"} - {job.address || "N/A"}
                 </li>
               ))}
             </ul>
@@ -156,40 +156,45 @@ const Dashboard = () => {
       </div>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {selectedJob && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Job Details</h2>
-            <p>
-              <strong>First Name:</strong> {selectedJob.firstName || "N/A"}
-            </p>
-            <p>
-              <strong>Last Name:</strong> {selectedJob.lastName || "N/A"}
-            </p>
-            <p>
-              <strong>Email:</strong> {selectedJob.email || "N/A"}
-            </p>
-            <p>
-              <strong>Address:</strong> {selectedJob.address || "N/A"}
-            </p>
-            {selectedJob.address && (
-              <StyledButton
-                onClick={() => openInGoogleMaps(selectedJob.address)}
-              >
-                <FaMapMarkerAlt />
-                View in Google Maps
-              </StyledButton>
-            )}
-            <p>
-              <strong>Time:</strong> {selectedJob.time || "N/A"}
-            </p>
-            <p>
-              <strong>Date:</strong> {selectedJob.date || "No date available"}
-            </p>
-            <p>
-              <strong>Description:</strong> {selectedJob.description || "N/A"}
-            </p>
-            <p>
-              <strong>Yardage:</strong> {selectedJob.yardage || "N/A"}
-            </p>
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-4">Job Details</h2>
+            <div className="space-y-2">
+              <p>
+                <strong>Name:</strong> {selectedJob.name || "N/A"}
+              </p>
+              <p>
+                <strong>Date:</strong> {selectedJob.date || "N/A"}
+              </p>
+              <p>
+                <strong>Email:</strong> {selectedJob.email || "N/A"}
+              </p>
+              <p>
+                <strong>Phone:</strong> {selectedJob.phone || "N/A"}
+              </p>
+              <p>
+                <strong>Address:</strong> {selectedJob.address || "N/A"}
+              </p>
+              {selectedJob.address && (
+                <StyledButton
+                  onClick={() => openInGoogleMaps(selectedJob.address)}
+                >
+                  <FaMapMarkerAlt />
+                  View in Google Maps
+                </StyledButton>
+              )}
+              <p>
+                <strong>Info:</strong> {selectedJob.info || "N/A"}
+              </p>
+              <p>
+                <strong>Price:</strong> {selectedJob.price || "N/A"}
+              </p>
+            </div>
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+            >
+              Close
+            </button>
           </div>
         )}
       </Modal>
