@@ -126,6 +126,11 @@ const AddData = () => {
       console.error("Error adding job: ", error);
     }
   };
+  const handleClickOutside = (event) => {
+    if (event.target.classList.contains("modal-overlay")) {
+      setIsModalOpen(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -234,8 +239,11 @@ const AddData = () => {
 
       {/* Modal for adding a job manually */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay"
+          onClick={handleClickOutside}
+        >
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto">
             <h3 className="font-bold text-lg text-gray-700 mb-4">
               Add New Job
             </h3>
@@ -253,6 +261,11 @@ const AddData = () => {
               <input
                 {...register("email", { required: true })}
                 placeholder="Email"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("phone", { required: true })}
+                placeholder="Phone"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
