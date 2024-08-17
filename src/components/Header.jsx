@@ -26,12 +26,22 @@ const Header = () => {
     <>
       <li>
         <Link
-          to="/dashboard"
+          to="/management"
           className="hover:text-blue-200 transition duration-300"
         >
-          Dashboard
+          Management
         </Link>
       </li>
+      {user && (
+        <li>
+          <Link
+            to="/dashboard"
+            className="hover:text-blue-200 transition duration-300"
+          >
+            Dashboard
+          </Link>
+        </li>
+      )}
       {user && (
         <li>
           <Link
@@ -69,7 +79,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <svg
+            {/* <svg
               className="h-8 w-8 mr-2"
               fill="none"
               viewBox="0 0 24 24"
@@ -81,8 +91,8 @@ const Header = () => {
                 strokeWidth={2}
                 d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
               />
-            </svg>
-            <span className="font-bold text-xl">Service App</span>
+            </svg> */}
+            <span className="font-bold text-xl">Sealer App</span>
           </div>
           <nav className="hidden md:block">
             <ul className="flex space-x-6">

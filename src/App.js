@@ -6,6 +6,7 @@ import Header from './components/Header';
 import Login from './components/Login';
 import Dashboard from './screens/Dashboard';
 import AddData from './screens/addData'; 
+import Management from './screens/Management';
 
 function App() {
   const [user, loading] = useAuthState(auth);
@@ -33,6 +34,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/management" 
+            element={
+              <ProtectedRoute>
+                <Management />
               </ProtectedRoute>
             } 
           />
