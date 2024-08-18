@@ -3,7 +3,7 @@ import { db } from "../firebase/firebase";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import Modal from "../components/Modal";
+import Modal from "./Addon/Modal";
 import styled from "styled-components";
 import { FaMapMarkerAlt } from "react-icons/fa";
 
