@@ -48,7 +48,6 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
-  const [completedJobsValue, setCompletedJobsValue] = useState(0);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -68,24 +67,9 @@ const Dashboard = () => {
     }
   }, []);
 
-  const calculateCompletedJobsValue = useCallback(() => {
-    const totalValue = jobs.reduce((sum, job) => {
-      if (job.completed && job.price) {
-        const price = parseFloat(job.price);
-        return isNaN(price) ? sum : sum + price;
-      }
-      return sum;
-    }, 0);
-    setCompletedJobsValue(totalValue);
-  }, [jobs]);
-
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
-
-  useEffect(() => {
-    calculateCompletedJobsValue();
-  }, [calculateCompletedJobsValue]);
 
   const handleJobClick = (job) => {
     setSelectedJob(job);
@@ -113,8 +97,6 @@ const Dashboard = () => {
         )
       );
       setSelectedJob((prevJob) => ({ ...prevJob, completed: true }));
-      // Recalculate completed jobs value
-      calculateCompletedJobsValue();
     } catch (error) {
       console.error("Error marking job as completed: ", error);
     }
@@ -154,7 +136,6 @@ const Dashboard = () => {
       <style>{highlightClass}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <p>Total value of completed jobs: ${completedJobsValue.toFixed(2)}</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-6">
