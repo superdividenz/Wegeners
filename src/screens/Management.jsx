@@ -27,15 +27,19 @@ const Dashboard = () => {
       return sum;
     }, 0);
     setCompletedJobsValue(totalValue);
-  }, [jobs]);
+  }, [jobs]); // Add jobs to the dependency array
 
   useEffect(() => {
-    fetchJobs();
+    const fetchJobsAndCalculate = async () => {
+      await fetchJobs(); // Assuming fetchJobs is an async function
+      calculateCompletedJobsValue();
+    };
+    fetchJobsAndCalculate();
   }, []);
 
   useEffect(() => {
     calculateCompletedJobsValue();
-  }, [calculateCompletedJobsValue]);
+  }, [calculateCompletedJobsValue, jobs]); // Add jobs to the dependency array
 
   const fetchJobs = async () => {
     setLoading(true);

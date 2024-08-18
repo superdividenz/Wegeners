@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "../components/Modal";
@@ -48,12 +48,9 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
+  const [completedJobsValue, setCompletedJobsValue] = useState(0);
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const jobsCollection = collection(db, "jobs");
@@ -69,7 +66,26 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const calculateCompletedJobsValue = useCallback(() => {
+    const totalValue = jobs.reduce((sum, job) => {
+      if (job.completed && job.price) {
+        const price = parseFloat(job.price);
+        return isNaN(price) ? sum : sum + price;
+      }
+      return sum;
+    }, 0);
+    setCompletedJobsValue(totalValue);
+  }, [jobs]);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+  useEffect(() => {
+    calculateCompletedJobsValue();
+  }, [calculateCompletedJobsValue]);
 
   const handleJobClick = (job) => {
     setSelectedJob(job);
@@ -82,6 +98,26 @@ const Dashboard = () => {
       `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
       "_blank"
     );
+  };
+
+  const markJobAsCompleted = async (jobId) => {
+    try {
+      const jobRef = doc(db, "jobs", jobId);
+      await updateDoc(jobRef, {
+        completed: true,
+      });
+      // Update the local state
+      setJobs((prevJobs) =>
+        prevJobs.map((job) =>
+          job.id === jobId ? { ...job, completed: true } : job
+        )
+      );
+      setSelectedJob((prevJob) => ({ ...prevJob, completed: true }));
+      // Recalculate completed jobs value
+      calculateCompletedJobsValue();
+    } catch (error) {
+      console.error("Error marking job as completed: ", error);
+    }
   };
 
   // Convert job date strings to Date objects for comparison
@@ -118,6 +154,7 @@ const Dashboard = () => {
       <style>{highlightClass}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
+        <p>Total value of completed jobs: ${completedJobsValue.toFixed(2)}</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-6">
@@ -188,13 +225,27 @@ const Dashboard = () => {
               <p>
                 <strong>Price:</strong> {selectedJob.price || "N/A"}
               </p>
+              <p>
+                <strong>Status:</strong>{" "}
+                {selectedJob.completed ? "Completed" : "Pending"}
+              </p>
             </div>
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
-            >
-              Close
-            </button>
+            <div className="mt-4 flex justify-between">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+              >
+                Close
+              </button>
+              {!selectedJob.completed && (
+                <button
+                  onClick={() => markJobAsCompleted(selectedJob.id)}
+                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
+                >
+                  Mark as Completed
+                </button>
+              )}
+            </div>
           </div>
         )}
       </Modal>
