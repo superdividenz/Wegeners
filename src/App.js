@@ -7,6 +7,7 @@ import Login from './components/Login';
 import Dashboard from './screens/Dashboard';
 import AddData from './screens/addData'; 
 import Management from './screens/Management';
+import Management2 from './screens/Management2';
 
 function App() {
   const [user, loading] = useAuthState(auth);
@@ -42,6 +43,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Management />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/management2" 
+            element={
+              <ProtectedRoute>
+                <Management2 />
               </ProtectedRoute>
             } 
           />

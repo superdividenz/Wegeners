@@ -26,10 +26,10 @@ const Header = () => {
     <>
       <li>
         <Link
-          to="/management"
+          to="/management2"
           className="hover:text-blue-200 transition duration-300"
         >
-          Management
+          Management2
         </Link>
       </li>
       {user && (
@@ -92,7 +92,7 @@ const Header = () => {
                 d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
               />
             </svg> */}
-            <span className="font-bold text-xl">Sealer App</span>
+            <span className="font-bold text-xl">Service App</span>
           </div>
           <nav className="hidden md:block">
             <ul className="flex space-x-6">
