@@ -9,7 +9,7 @@ import {
   FaToggleOff,
 } from "react-icons/fa";
 
-const Dashboard = () => {
+const Management = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,21 +27,9 @@ const Dashboard = () => {
       return sum;
     }, 0);
     setCompletedJobsValue(totalValue);
-  }, [jobs]); // Add jobs to the dependency array
+  }, [jobs]);
 
-  useEffect(() => {
-    const fetchJobsAndCalculate = async () => {
-      await fetchJobs(); // Assuming fetchJobs is an async function
-      calculateCompletedJobsValue();
-    };
-    fetchJobsAndCalculate();
-  }, []);
-
-  useEffect(() => {
-    calculateCompletedJobsValue();
-  }, [calculateCompletedJobsValue, jobs]); // Add jobs to the dependency array
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
       const jobsCollection = collection(db, "jobs");
@@ -52,23 +40,21 @@ const Dashboard = () => {
         completed: doc.data().completed || false,
       }));
       setJobs(jobList);
-
-      // Calculate total value of completed jobs
-      const totalValue = jobList.reduce((sum, job) => {
-        if (job.completed && job.price) {
-          const price = parseFloat(job.price);
-          return isNaN(price) ? sum : sum + price;
-        }
-        return sum;
-      }, 0);
-      setCompletedJobsValue(totalValue);
     } catch (error) {
       console.error("Error fetching jobs:", error);
       setError("Failed to load jobs. Please try again later.");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+  useEffect(() => {
+    calculateCompletedJobsValue();
+  }, [calculateCompletedJobsValue]);
 
   const handleJobClick = (job) => {
     setSelectedJob(job);
@@ -92,16 +78,7 @@ const Dashboard = () => {
       );
       setJobs(updatedJobs);
       setIsModalOpen(false);
-
-      // Recalculate total value of completed jobs
-      const newTotalValue = updatedJobs.reduce((sum, job) => {
-        if (job.completed && job.price) {
-          const price = parseFloat(job.price);
-          return isNaN(price) ? sum : sum + price;
-        }
-        return sum;
-      }, 0);
-      setCompletedJobsValue(newTotalValue);
+      calculateCompletedJobsValue();
     } catch (error) {
       console.error("Error marking job as done:", error);
     }
@@ -225,4 +202,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Management;
