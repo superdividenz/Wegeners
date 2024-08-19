@@ -91,13 +91,13 @@ const InvoicePDF = ({ job = {}, companyInfo = {} }) => (
       <View style={styles.headerContainer}>
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>
-            {companyInfo.name || "Company Name"}
+            {companyInfo.name || "Wegener Asphalt"}
           </Text>
           <Text style={styles.headerInfo}>
-            {companyInfo.address || "Company Address"}
+            {companyInfo.address || "10200 Quail Run Dr. 63128"}
           </Text>
           <Text style={styles.headerInfo}>
-            {companyInfo.phone || "Company Phone"}
+            {companyInfo.phone || "314-300-6562"}
           </Text>
         </View>
         {companyInfo.logoUrl && (

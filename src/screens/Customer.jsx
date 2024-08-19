@@ -268,13 +268,13 @@ const AddData = () => {
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
-                {...register("description", { required: true })}
-                placeholder="Description"
+                {...register("price", { required: true })}
+                placeholder="price"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
-                {...register("price", { required: true })}
-                placeholder="Price"
+                {...register("info", { required: true })}
+                placeholder="info"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <div className="flex justify-end space-x-4">

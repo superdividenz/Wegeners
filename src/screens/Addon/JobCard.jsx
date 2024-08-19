@@ -7,19 +7,19 @@ import InvoicePDF from "./InvoicePDF";
 const JobCard = ({ job, onJobClick, onDownload, downloadedJobs }) => {
   return (
     <div
-      className={`bg-white shadow-md rounded-lg p-6 cursor-pointer hover:shadow-lg transition duration-300 ${
+      className={`bg-white shadow-md rounded-lg p-4 sm:p-6 cursor-pointer hover:shadow-lg transition duration-300 ${
         downloadedJobs.has(job.id) ? "border-2 border-green-500" : ""
       }`}
       onClick={() => onJobClick(job)}
     >
-      <h3 className="text-xl font-semibold mb-2">{job.name}</h3>
-      <p className="flex items-center text-gray-600 mb-4">
+      <h3 className="text-lg sm:text-xl font-semibold mb-2">{job.name}</h3>
+      <p className="flex items-center text-sm sm:text-base text-gray-600 mb-4">
         <FaMapMarkerAlt className="mr-2" /> {job.address}
       </p>
       <PDFDownloadLink
         document={<InvoicePDF job={job} />}
         fileName={`invoice_${job.name}.pdf`}
-        className={`inline-flex items-center px-4 py-2 rounded transition duration-300 ${
+        className={`inline-flex items-center justify-center w-full sm:w-auto px-3 sm:px-4 py-2 rounded text-sm sm:text-base transition duration-300 ${
           downloadedJobs.has(job.id)
             ? "bg-green-500 hover:bg-green-600 text-white"
             : "bg-blue-500 hover:bg-blue-600 text-white"
@@ -31,13 +31,18 @@ const JobCard = ({ job, onJobClick, onDownload, downloadedJobs }) => {
       >
         {({ blob, url, loading, error }) =>
           loading ? (
-            "Generating Invoice..."
+            "Generating..."
           ) : (
             <>
               <FaFileDownload className="mr-2" />
-              {downloadedJobs.has(job.id)
-                ? "Invoice Downloaded"
-                : "Download Invoice"}
+              <span className="hidden sm:inline">
+                {downloadedJobs.has(job.id)
+                  ? "Invoice Downloaded"
+                  : "Download Invoice"}
+              </span>
+              <span className="sm:hidden">
+                {downloadedJobs.has(job.id) ? "Downloaded" : "Download"}
+              </span>
             </>
           )
         }

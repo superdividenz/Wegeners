@@ -59,16 +59,18 @@ const Management = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Completed Jobs</h1>
-      <p className="text-lg font-semibold mb-6">
+    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
+        Completed Jobs
+      </h1>
+      <p className="text-base sm:text-lg font-semibold mb-4 sm:mb-6">
         Total value of completed jobs: ${completedJobsValue.toFixed(2)}
       </p>
 
       {jobs.length === 0 ? (
         <p className="text-gray-600 text-center">No completed jobs found.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {jobs.map((job) => (
             <JobCard
               key={job.id}
@@ -84,7 +86,7 @@ const Management = () => {
                   {({ blob, url, loading, error }) => (
                     <button
                       onClick={() => handleDownload(job)}
-                      className={`px-4 py-2 rounded ${
+                      className={`w-full sm:w-auto px-3 sm:px-4 py-2 rounded text-sm sm:text-base ${
                         downloadedJobs.has(job.id)
                           ? "bg-gray-400 cursor-not-allowed"
                           : "bg-blue-500 hover:bg-blue-600"
@@ -121,7 +123,7 @@ const Management = () => {
               {({ blob, url, loading, error }) => (
                 <button
                   onClick={() => handleDownload(selectedJob)}
-                  className={`px-4 py-2 rounded ${
+                  className={`w-full sm:w-auto px-3 sm:px-4 py-2 rounded text-sm sm:text-base ${
                     downloadedJobs.has(selectedJob.id)
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-blue-500 hover:bg-blue-600"
@@ -139,7 +141,7 @@ const Management = () => {
       )}
 
       {showNotification && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg text-sm sm:text-base">
           Invoice downloaded successfully!
         </div>
       )}
