@@ -46,7 +46,7 @@ const Header = () => {
       {user && (
         <li>
           <Link
-            to="/add-data"
+            to="/Customer"
             className="hover:text-blue-200 transition duration-300"
           >
             Customer

@@ -4,8 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Management from "./screens/Management";
 import Dashboard from "./screens/Dashboard";
-import Login from "./screens/Login"; // Ensure this matches the file name
-import AddData from "./screens/AddData"; // Use AddData instead of Customer
+import Login from "./screens/Login"; 
+import Customer from "./screens/Customer"; 
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
@@ -31,10 +31,10 @@ const App = () => {
           }
         />
         <Route
-          path="/add-data"
+          path="/Customer"
           element={
             <ProtectedRoute>
-              <AddData /> {/* Use AddData component here */}
+              <Customer /> {/* Use AddData component here */}
             </ProtectedRoute>
           }
         />

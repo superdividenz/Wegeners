@@ -1,9 +1,11 @@
-// Management.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import JobCard from "./Addon/JobCard";
 import JobModal from "./Addon/JobModal";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import InvoicePDF from "./Addon/InvoicePDF";
+import ReportGenerator from "./Addon/ReportGenerator";
 
 const Management = () => {
   const [jobs, setJobs] = useState([]);
@@ -12,6 +14,13 @@ const Management = () => {
   const [completedJobsValue, setCompletedJobsValue] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
   const [downloadedJobs, setDownloadedJobs] = useState(new Set());
+
+  const companyInfo = {
+    name: "Wegener Asphalt",
+    address: "123 Main St, Anytown, ST 12345",
+    phone: "(123) 456-7890",
+    logoUrl: "/path/to/your/logo.png",
+  };
 
   const fetchJobs = useCallback(async () => {
     const querySnapshot = await getDocs(collection(db, "jobs"));
@@ -43,12 +52,10 @@ const Management = () => {
     setSelectedJob(null);
   };
 
-  const handleDownload = (jobId) => {
-    setTimeout(() => {
-      setShowNotification(true);
-      setDownloadedJobs((prev) => new Set(prev).add(jobId));
-      setTimeout(() => setShowNotification(false), 3000);
-    }, 1000);
+  const handleDownload = (job) => {
+    setShowNotification(true);
+    setDownloadedJobs((prev) => new Set(prev).add(job.id));
+    setTimeout(() => setShowNotification(false), 3000);
   };
 
   return (
@@ -67,19 +74,67 @@ const Management = () => {
               key={job.id}
               job={job}
               onJobClick={handleJobClick}
-              onDownload={handleDownload}
+              onDownload={() => handleDownload(job)}
               downloadedJobs={downloadedJobs}
+              pdfDownloadLink={
+                <PDFDownloadLink
+                  document={<InvoicePDF job={job} companyInfo={companyInfo} />}
+                  fileName={`invoice-${job.id}.pdf`}
+                >
+                  {({ blob, url, loading, error }) => (
+                    <button
+                      onClick={() => handleDownload(job)}
+                      className={`px-4 py-2 rounded ${
+                        downloadedJobs.has(job.id)
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-500 hover:bg-blue-600"
+                      } text-white`}
+                      disabled={downloadedJobs.has(job.id)}
+                    >
+                      {downloadedJobs.has(job.id)
+                        ? "Downloaded"
+                        : "Download Invoice"}
+                    </button>
+                  )}
+                </PDFDownloadLink>
+              }
             />
           ))}
         </div>
       )}
 
+      <ReportGenerator jobs={jobs} />
+
       {isModalOpen && selectedJob && (
         <JobModal
           job={selectedJob}
           onClose={handleCloseModal}
-          onDownload={handleDownload}
+          onDownload={() => handleDownload(selectedJob)}
           downloadedJobs={downloadedJobs}
+          pdfDownloadLink={
+            <PDFDownloadLink
+              document={
+                <InvoicePDF job={selectedJob} companyInfo={companyInfo} />
+              }
+              fileName={`invoice-${selectedJob.id}.pdf`}
+            >
+              {({ blob, url, loading, error }) => (
+                <button
+                  onClick={() => handleDownload(selectedJob)}
+                  className={`px-4 py-2 rounded ${
+                    downloadedJobs.has(selectedJob.id)
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-600"
+                  } text-white`}
+                  disabled={downloadedJobs.has(selectedJob.id)}
+                >
+                  {downloadedJobs.has(selectedJob.id)
+                    ? "Downloaded"
+                    : "Download Invoice"}
+                </button>
+              )}
+            </PDFDownloadLink>
+          }
         />
       )}
 

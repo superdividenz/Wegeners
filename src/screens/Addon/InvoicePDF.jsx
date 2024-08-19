@@ -1,67 +1,142 @@
-// InvoicePDF.jsx
 import React from "react";
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Font,
+  Image,
+} from "@react-pdf/renderer";
 
-// Define styles for the PDF, inspired by Tailwind CSS
+// Register a custom font (optional, but adds a professional touch)
+Font.register({
+  family: "Roboto",
+  src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf",
+});
+
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#f9fafb", // Tailwind's gray-50
-    padding: 24, // Tailwind's p-6
+    backgroundColor: "#f9fafb",
+    padding: 40,
+    fontFamily: "Roboto",
   },
-  header: {
-    fontSize: 24, // Tailwind's text-2xl
-    textAlign: "center",
-    marginBottom: 16, // Tailwind's mb-4
-    color: "#1f2937", // Tailwind's gray-800
+  headerContainer: {
+    flexDirection: "row",
+    marginBottom: 20,
+    borderBottom: "1 solid #e5e7eb",
+    paddingBottom: 10,
+  },
+  headerText: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1f2937",
+  },
+  headerInfo: {
+    fontSize: 10,
+    color: "#4b5563",
+    marginTop: 4,
+  },
+  logo: {
+    width: 60,
+    height: 60,
   },
   section: {
-    marginBottom: 16, // Tailwind's mb-4
-    padding: 16, // Tailwind's p-4
-    backgroundColor: "#ffffff", // Tailwind's white
-    borderRadius: 8, // Tailwind's rounded-lg
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)", // Tailwind's shadow
+    marginBottom: 20,
+    padding: 20,
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
   },
   title: {
-    fontSize: 20, // Tailwind's text-xl
-    marginBottom: 8, // Tailwind's mb-2
-    color: "#3b82f6", // Tailwind's blue-500
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: "#3b82f6",
+    borderBottom: "1 solid #e5e7eb",
+    paddingBottom: 8,
   },
-  text: {
-    fontSize: 14, // Tailwind's text-sm
-    marginBottom: 4, // Tailwind's mb-1
-    color: "#4b5563", // Tailwind's gray-600
+  row: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  label: {
+    width: "30%",
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#4b5563",
+  },
+  value: {
+    width: "70%",
+    fontSize: 12,
+    color: "#1f2937",
   },
   footer: {
     position: "absolute",
-    bottom: 24, // Tailwind's bottom-6
+    bottom: 30,
     left: 0,
     right: 0,
     textAlign: "center",
-    fontSize: 12, // Tailwind's text-xs
-    color: "#9ca3af", // Tailwind's gray-400
+    fontSize: 10,
+    color: "#9ca3af",
   },
 });
 
-// Define the InvoicePDF component
-const InvoicePDF = ({ job }) => (
+const InvoicePDF = ({ job = {}, companyInfo = {} }) => (
   <Document>
     <Page size="A4" style={styles.page}>
-      {/* Header */}
-      <Text style={styles.header}>Company Name</Text>
-
-      {/* Invoice Section */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Invoice</Text>
-        <Text style={styles.text}>Job: {job.name}</Text>
-        <Text style={styles.text}>Date: {job.date}</Text>
-        <Text style={styles.text}>Price: ${job.price}</Text>
-        <Text style={styles.text}>Address: {job.address}</Text>
-        <Text style={styles.text}>Email: {job.email}</Text>
-        <Text style={styles.text}>Phone: {job.phone}</Text>
-        <Text style={styles.text}>Additional Info: {job.info}</Text>
+      <View style={styles.headerContainer}>
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>
+            {companyInfo.name || "Company Name"}
+          </Text>
+          <Text style={styles.headerInfo}>
+            {companyInfo.address || "Company Address"}
+          </Text>
+          <Text style={styles.headerInfo}>
+            {companyInfo.phone || "Company Phone"}
+          </Text>
+        </View>
+        {companyInfo.logoUrl && (
+          <Image style={styles.logo} src={companyInfo.logoUrl} />
+        )}
       </View>
 
-      {/* Footer */}
+      <View style={styles.section}>
+        <Text style={styles.title}>Invoice Details</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Job:</Text>
+          <Text style={styles.value}>{job.name || "N/A"}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Date:</Text>
+          <Text style={styles.value}>{job.date || "N/A"}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Price:</Text>
+          <Text style={styles.value}>${job.price || "N/A"}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Address:</Text>
+          <Text style={styles.value}>{job.address || "N/A"}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Email:</Text>
+          <Text style={styles.value}>{job.email || "N/A"}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Phone:</Text>
+          <Text style={styles.value}>{job.phone || "N/A"}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Additional Info:</Text>
+          <Text style={styles.value}>{job.info || "N/A"}</Text>
+        </View>
+      </View>
+
       <Text style={styles.footer}>Thank you for your business!</Text>
     </Page>
   </Document>
