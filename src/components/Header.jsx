@@ -25,14 +25,16 @@ const Header = () => {
 
   const NavLinks = () => (
     <>
-      <li>
-        <Link
-          to="/management"
-          className="hover:text-blue-200 transition duration-300"
-        >
-          Management
-        </Link>
-      </li>
+      {user && ( // Only show Management link if user is authenticated
+        <li>
+          <Link
+            to="/management"
+            className="hover:text-blue-200 transition duration-300"
+          >
+            Management
+          </Link>
+        </li>
+      )}
       {user && (
         <li>
           <Link
@@ -46,7 +48,7 @@ const Header = () => {
       {user && (
         <li>
           <Link
-            to="/Customer"
+            to="/customer"
             className="hover:text-blue-200 transition duration-300"
           >
             Customer
@@ -80,7 +82,7 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <span className="font-bold text-xl">Service App</span>
+            <span className="font-bold text-xl">Wegener Sealer</span>
           </div>
           <nav className="hidden md:block">
             <ul className="flex space-x-6">

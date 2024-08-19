@@ -1,11 +1,10 @@
-// App.js
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
 import Management from "./screens/Management";
 import Dashboard from "./screens/Dashboard";
-import Login from "./screens/Login"; 
-import Customer from "./screens/Customer"; 
+import Login from "./screens/Login";
+import Customer from "./screens/Customer";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
@@ -13,6 +12,7 @@ const App = () => {
     <Router>
       <Header />
       <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route
           path="/management"
@@ -31,14 +31,13 @@ const App = () => {
           }
         />
         <Route
-          path="/Customer"
+          path="/customer"
           element={
             <ProtectedRoute>
-              <Customer /> {/* Use AddData component here */}
+              <Customer />
             </ProtectedRoute>
           }
         />
-        {/* Add other routes here */}
       </Routes>
     </Router>
   );
