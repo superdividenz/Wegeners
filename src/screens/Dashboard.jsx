@@ -23,7 +23,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false); // State for map modal
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
