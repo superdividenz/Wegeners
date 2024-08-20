@@ -1,4 +1,3 @@
-// Dashboard.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
@@ -215,7 +214,7 @@ const Dashboard = () => {
       {isMapModalOpen && (
         <JobsMapModal
           jobs={jobs}
-          apiKey="YOUR_GOOGLE_MAPS_API_KEY" // Replace with your actual API key
+          apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
           onClose={() => setIsMapModalOpen(false)}
         />
       )}

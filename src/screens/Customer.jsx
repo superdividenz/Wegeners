@@ -135,7 +135,7 @@ const AddData = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <h1 className="text-center text-4xl font-bold mb-6 text-gray-800">
-        Customer
+        Customer Input
       </h1>
 
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
