@@ -1,3 +1,4 @@
+// Dashboard.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
@@ -5,6 +6,7 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "./Addon/Modal";
 import { FaMapMarkerAlt } from "react-icons/fa";
+import JobsMapModal from "./Addon/JobsMapModal";
 
 // CSS class for highlighted dates
 const highlightClass = `
@@ -21,6 +23,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false); // State for map modal
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -108,6 +111,12 @@ const Dashboard = () => {
       <style>{highlightClass}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
+        <button
+          onClick={() => setIsMapModalOpen(true)}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-200"
+        >
+          Jobs on Map
+        </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-4 sm:p-6">
@@ -203,6 +212,13 @@ const Dashboard = () => {
           </div>
         )}
       </Modal>
+      {isMapModalOpen && (
+        <JobsMapModal
+          jobs={jobs}
+          apiKey="YOUR_GOOGLE_MAPS_API_KEY" // Replace with your actual API key
+          onClose={() => setIsMapModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
