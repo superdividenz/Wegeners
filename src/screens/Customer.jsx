@@ -135,7 +135,7 @@ const AddData = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <h1 className="text-center text-4xl font-bold mb-6 text-gray-800">
-        Customer
+        Customer Input
       </h1>
 
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
@@ -188,7 +188,7 @@ const AddData = () => {
             />
             <input
               {...register("date", { required: true })}
-              type="date"
+              type="text"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
@@ -264,7 +264,7 @@ const AddData = () => {
               />
               <input
                 {...register("date", { required: true })}
-                type="date"
+                type="text"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea

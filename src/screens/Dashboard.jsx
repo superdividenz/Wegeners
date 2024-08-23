@@ -1,4 +1,3 @@
-// Dashboard.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
@@ -6,13 +5,24 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "./Addon/Modal";
 import { FaMapMarkerAlt } from "react-icons/fa";
-import JobsMapModal from "./Addon/JobsMapModal";
 
-// CSS class for highlighted dates
 const highlightClass = `
   .highlight {
     background-color: #ffeb3b;
     border-radius: 50%;
+  }
+  .react-calendar {
+    width: 100%;
+    max-width: 100%;
+    background: white;
+    border: 1px solid #a0a096;
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.125em;
+  }
+  @media (max-width: 640px) {
+    .react-calendar__month-view__days__day {
+      padding: 0.5em 0;
+    }
   }
 `;
 
@@ -23,7 +33,6 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -77,7 +86,6 @@ const Dashboard = () => {
     }
   };
 
-  // Convert job date strings to Date objects for comparison
   const jobDates = jobs
     .map((job) => {
       if (job.date) {
@@ -88,7 +96,6 @@ const Dashboard = () => {
     })
     .filter(Boolean);
 
-  // Filter jobs for the selected date
   const jobsForSelectedDate = jobs.filter((job) => {
     if (job.date) {
       const [month, day, year] = job.date.split("/");
@@ -99,27 +106,21 @@ const Dashboard = () => {
   });
 
   if (loading) {
-    return <div className="text-center mt-8">Loading...</div>;
+    return <div className="text-center mt-8 p-4">Loading...</div>;
   }
 
   if (error) {
-    return <div className="text-center mt-8 text-red-500">{error}</div>;
+    return <div className="text-center mt-8 p-4 text-red-500">{error}</div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8">
+    <div className="container mx-auto px-4 py-6">
       <style>{highlightClass}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
-        <button
-          onClick={() => setIsMapModalOpen(true)}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-200"
-        >
-          Jobs on Map
-        </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+        <div className="bg-white shadow rounded-lg p-4">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">Calendar</h2>
           <Calendar
             onChange={setDate}
@@ -128,11 +129,11 @@ const Dashboard = () => {
               const dateString = date.toDateString();
               return jobDates.includes(dateString) ? "highlight" : null;
             }}
-            className="react-calendar w-full"
+            className="react-calendar"
           />
         </div>
 
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+        <div className="bg-white shadow rounded-lg p-4">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">
             Jobs on {date.toLocaleDateString()}
           </h2>
@@ -141,7 +142,7 @@ const Dashboard = () => {
               {jobsForSelectedDate.map((job) => (
                 <li
                   key={job.id}
-                  className="p-2 hover:bg-gray-100 rounded cursor-pointer transition duration-200"
+                  className="p-3 hover:bg-gray-100 rounded cursor-pointer transition duration-200"
                   onClick={() => handleJobClick(job)}
                 >
                   {job.date || "N/A"} - {job.address || "N/A"}
@@ -149,15 +150,15 @@ const Dashboard = () => {
               ))}
             </ul>
           ) : (
-            <p>No jobs scheduled for this date.</p>
+            <p className="text-center p-4">No jobs scheduled for this date.</p>
           )}
         </div>
       </div>
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {selectedJob && (
-          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md mx-auto">
-            <h2 className="text-xl sm:text-2xl font-bold mb-4">Job Details</h2>
-            <div className="space-y-2 text-sm sm:text-base">
+          <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-md mx-auto">
+            <h2 className="text-xl font-bold mb-4">Job Details</h2>
+            <div className="space-y-2 text-sm">
               <p>
                 <strong>Name:</strong> {selectedJob.name || "N/A"}
               </p>
@@ -176,7 +177,7 @@ const Dashboard = () => {
               {selectedJob.address && (
                 <button
                   onClick={() => openInGoogleMaps(selectedJob.address)}
-                  className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm transition duration-200"
+                  className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm transition duration-200 w-full justify-center mt-2"
                 >
                   <FaMapMarkerAlt className="mr-2" />
                   View in Google Maps
@@ -193,17 +194,17 @@ const Dashboard = () => {
                 {selectedJob.completed ? "Completed" : "Pending"}
               </p>
             </div>
-            <div className="mt-6 flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2">
+            <div className="mt-6 flex flex-col space-y-2">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+                className="w-full bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
               >
                 Close
               </button>
               {!selectedJob.completed && (
                 <button
                   onClick={() => markJobAsCompleted(selectedJob.id)}
-                  className="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
+                  className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
                 >
                   Mark as Completed
                 </button>
@@ -212,13 +213,6 @@ const Dashboard = () => {
           </div>
         )}
       </Modal>
-      {isMapModalOpen && (
-        <JobsMapModal
-          jobs={jobs}
-          apiKey="YOUR_GOOGLE_MAPS_API_KEY" // Replace with your actual API key
-          onClose={() => setIsMapModalOpen(false)}
-        />
-      )}
     </div>
   );
 };
