@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useAuthState } from "react-firebase-hooks/auth";
+import logo from "./img/Logo.png";
 
 const Header = () => {
   const [user] = useAuthState(auth);
@@ -29,7 +30,7 @@ const Header = () => {
         <li>
           <Link
             to="/management"
-            className="hover:text-blue-200 transition duration-300"
+            className="inline-block hover:text-blue-200 hover-scale"
           >
             Management
           </Link>
@@ -39,7 +40,7 @@ const Header = () => {
         <li>
           <Link
             to="/dashboard"
-            className="hover:text-blue-200 transition duration-300"
+            className="inline-block hover:text-blue-200 hover-scale"
           >
             Dashboard
           </Link>
@@ -49,7 +50,7 @@ const Header = () => {
         <li>
           <Link
             to="/customer"
-            className="hover:text-blue-200 transition duration-300"
+            className="inline-block hover:text-blue-200 hover-scale"
           >
             Customer
           </Link>
@@ -59,7 +60,7 @@ const Header = () => {
         <li>
           <button
             onClick={handleLogout}
-            className="hover:text-blue-200 transition duration-300"
+            className="inline-block hover:text-blue-200 hover-scale"
           >
             Logout
           </button>
@@ -68,7 +69,7 @@ const Header = () => {
         <li>
           <Link
             to="/login"
-            className="hover:text-blue-200 transition duration-300"
+            className="inline-block hover:text-blue-200 hover-scale"
           >
             Login
           </Link>
@@ -78,11 +79,15 @@ const Header = () => {
   );
 
   return (
-    <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+    <header className="bg-gradient-to-r from-black to-gray-800 text-white shadow-lg">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <span className="font-bold text-xl">Wegener Sealer</span>
+            <img
+              src={logo}
+              alt="Wegener Sealer Logo"
+              className="h-12 w-auto transition-transform duration-300 hover:scale-110"
+            />
           </div>
           <nav className="hidden md:block">
             <ul className="flex space-x-6">
