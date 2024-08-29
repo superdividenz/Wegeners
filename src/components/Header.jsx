@@ -1,5 +1,4 @@
-// Header.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
@@ -10,6 +9,19 @@ const Header = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsSticky(window.scrollY > 0);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -26,7 +38,7 @@ const Header = () => {
 
   const NavLinks = () => (
     <>
-      {user && ( // Only show Management link if user is authenticated
+      {user && (
         <li>
           <Link
             to="/management"
@@ -79,14 +91,20 @@ const Header = () => {
   );
 
   return (
-    <header className="bg-gradient-to-r from-black to-gray-800 text-white shadow-lg">
-      <div className="container mx-auto px-4 py-3">
+    <header
+      className={`bg-gradient-to-r from-black to-gray-800 text-white shadow-lg fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isSticky ? "py-2" : "py-3"
+      }`}
+    >
+      <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <img
               src={logo}
               alt="Wegener Sealer Logo"
-              className="h-12 w-auto transition-transform duration-300 hover:scale-110"
+              className={`transition-all duration-300 hover:scale-110 ${
+                isSticky ? "h-10" : "h-12"
+              }`}
             />
           </div>
           <nav className="hidden md:block">

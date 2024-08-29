@@ -265,6 +265,7 @@ const AddData = () => {
               <input
                 {...register("date", { required: true })}
                 type="text"
+                placeholder="M/DD/YYYY"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
