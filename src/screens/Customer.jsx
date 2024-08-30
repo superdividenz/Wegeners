@@ -9,6 +9,7 @@ import {
   updateDoc,
   doc,
   setDoc,
+  writeBatch,
 } from "firebase/firestore";
 import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid"; // Import the uuid library
@@ -74,39 +75,80 @@ const AddData = () => {
     Papa.parse(file, {
       header: true,
       complete: async (results) => {
-        console.log("Parsed CSV data:", results.data); // Log parsed data
+        console.log("Parsed CSV data:", results.data);
         const db = getFirestore();
+        const batch = writeBatch(db);
+        let processedRows = 0;
+        let skippedRows = 0;
 
         for (const row of results.data) {
+          // Skip empty rows
+          if (Object.keys(row).length === 0) {
+            skippedRows++;
+            continue;
+          }
+
           try {
-            // Generate a unique ID if 'id' is missing
             const docId = row.id || uuidv4();
             const docRef = doc(db, "jobs", docId);
-            await setDoc(docRef, { ...row, id: docId }); // Store ID in the document
-          } catch (error) {
-            console.error(
-              "Error adding job from CSV:",
-              error.message,
-              error.stack
+
+            // Remove empty fields and trim whitespace
+            const cleanedRow = Object.fromEntries(
+              Object.entries(row)
+                .filter(([key, value]) => value.trim() !== "")
+                .map(([key, value]) => [key, value.trim()])
             );
+
+            // Add the id field back if it was removed
+            cleanedRow.id = docId;
+
+            // Only add the row if there's at least one non-empty field (excluding id)
+            if (Object.keys(cleanedRow).length > 1) {
+              batch.set(docRef, cleanedRow);
+              processedRows++;
+            } else {
+              skippedRows++;
+            }
+          } catch (error) {
+            console.error("Error processing row:", row, error);
           }
         }
-        alert("CSV data uploaded successfully");
-        setMatchingJobs([]); // Clear matching jobs after upload
+
+        try {
+          await batch.commit();
+          alert(
+            `CSV data uploaded successfully. Processed ${processedRows} rows. Skipped ${skippedRows} rows.`
+          );
+          setMatchingJobs([]);
+        } catch (error) {
+          console.error("Error committing batch:", error);
+          alert(
+            "Error uploading CSV data. Please check the console for details."
+          );
+        }
       },
       error: (error) => {
         console.error("Error parsing CSV: ", error);
+        alert("Error parsing CSV file. Please check the file format.");
       },
     });
   };
 
-  const handleDownload = () => {
-    const csv = Papa.unparse(matchingJobs);
+  const handleDownload = async () => {
+    const db = getFirestore();
+    const jobsRef = collection(db, "jobs");
+    const querySnapshot = await getDocs(jobsRef);
+    const allJobs = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const csv = Papa.unparse(allJobs);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "jobs_data.csv");
+    link.setAttribute("download", "all_jobs_data.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
