@@ -12,7 +12,28 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import Papa from "papaparse";
-import { v4 as uuidv4 } from "uuid"; // Import the uuid library
+import { v4 as uuidv4 } from "uuid";
+
+// Move handleDownload function here, outside of AddData component
+const handleDownload = async () => {
+  const db = getFirestore();
+  const jobsRef = collection(db, "jobs");
+  const querySnapshot = await getDocs(jobsRef);
+  const allJobs = querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  const csv = Papa.unparse(allJobs);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "all_jobs_data.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 const AddData = () => {
   const { register, handleSubmit, setValue, reset } = useForm();
@@ -134,24 +155,20 @@ const AddData = () => {
     });
   };
 
-  const handleDownload = async () => {
+  const handleDownloadAndDelete = async () => {
+    await handleDownload();
     const db = getFirestore();
     const jobsRef = collection(db, "jobs");
     const querySnapshot = await getDocs(jobsRef);
-    const allJobs = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
 
-    const csv = Papa.unparse(allJobs);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "all_jobs_data.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Delete all documents
+    const batch = writeBatch(db);
+    querySnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    console.log("All jobs deleted");
   };
 
   const handleAddJob = async (data) => {
@@ -259,10 +276,10 @@ const AddData = () => {
             className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
-            onClick={handleDownload}
-            className="bg-blue-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-blue-600 transition duration-200 w-full"
+            onClick={handleDownloadAndDelete}
+            className="bg-red-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-red-600 transition duration-200 w-full"
           >
-            Download Data
+            Download and Delete All Data
           </button>
           <button
             onClick={() => setIsModalOpen(true)} // Open the modal on click

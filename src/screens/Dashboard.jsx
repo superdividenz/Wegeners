@@ -68,14 +68,12 @@ const Dashboard = () => {
 
   const generateShareableLink = async (job) => {
     const shareId = uuidv4();
-    const shareRef = doc(db, "jobs", shareId);
+    const shareRef = doc(db, "shared_jobs", shareId);
     await setDoc(shareRef, {
       ...job,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Link expires in 7 days
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
-    const link = `${window.location.origin}/share/${shareId}`;
-    console.log("Generated link:", link); // Debugging line
-    return link;
+    return `${window.location.origin}/share/${shareId}`;
   };
 
   const generateShareableDayLink = async (date, jobsForDay) => {
@@ -209,7 +207,7 @@ const Dashboard = () => {
                 onClick={handleShareDay}
                 className="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
               >
-                Share Jobs for This Day
+                Share Jobs
               </button>
             </>
           ) : (
