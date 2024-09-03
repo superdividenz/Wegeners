@@ -172,9 +172,11 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-20 py-10">
       <style>{highlightClass}</style>
-      <h1 className="text-3xl font-bold mb-8">Job Dashboard</h1>
+      <h1 className="text-3xl font-bold mt-10 mb-4 flex justify-center">
+        Job Dashboard
+      </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
           <Calendar
