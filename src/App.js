@@ -1,10 +1,8 @@
-// App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Header from "./components/Header";
 import Management from "./screens/Management";
-import Dashboard from "./screens/Dashboard";
 import Login from "./screens/Login";
 import Customer from "./screens/Customer";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -13,6 +11,7 @@ import AdminRoleAssignment from "./context/AdminRoleAssignment";
 import { AuthProvider } from "./context/AuthContext";
 import SharedJobView from "./screens/Addon/SharedJobView";
 import SharedDayJobsView from "./screens/Addon/SharedDayJobsView"; // Import the new component
+import Dashboard from './screens/Dashboard';
 
 const App = () => {
   return (

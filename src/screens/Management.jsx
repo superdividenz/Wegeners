@@ -103,7 +103,7 @@ const Management = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto mt-20 px-4 py-6">
       <h1 className="text-2xl sm:text-3xl font-bold mb-4">Completed Jobs</h1>
       <p className="text-base sm:text-lg font-semibold mb-4">
         Total value of completed jobs: ${completedJobsValue.toFixed(2)}
