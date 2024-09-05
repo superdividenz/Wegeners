@@ -54,6 +54,19 @@ const AddData = () => {
     if (!selectedJob) return;
 
     const db = getFirestore();
+    const jobsRef = collection(db, "jobs");
+    const q = query(
+      jobsRef,
+      where("name", "==", data.name),
+      where("id", "!=", selectedJob.id)
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      alert("A job with this name already exists.");
+      return;
+    }
+
     const jobDocRef = doc(db, "jobs", selectedJob.id);
 
     try {
@@ -114,6 +127,15 @@ const AddData = () => {
 
   const handleAddJob = async (data) => {
     const db = getFirestore();
+    const jobsRef = collection(db, "jobs");
+    const q = query(jobsRef, where("name", "==", data.name));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      alert("A job with this name already exists.");
+      return;
+    }
+
     const docId = uuidv4(); // Generate a unique ID for the new job
     const docRef = doc(db, "jobs", docId);
 
