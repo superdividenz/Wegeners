@@ -5,6 +5,15 @@ import JobCard from "./Addon/JobCard";
 import JobModal from "./Addon/JobModal";
 import ReportGenerator from "./Addon/ReportGenerator";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import BidModal from "./Addon/BidModal"; // Adjust the path if necessary
+import { gapi } from "gapi-script";
+
+const CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
+const API_KEY = "YOUR_API_KEY";
+const DISCOVERY_DOCS = [
+  "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+];
+const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 const Management = () => {
   const [jobs, setJobs] = useState([]);
@@ -16,6 +25,12 @@ const Management = () => {
   const [downloadedJobs, setDownloadedJobs] = useState(new Set());
   const [archivedJobs, setArchivedJobs] = useState(new Set());
   const [showArchivedJobs, setShowArchivedJobs] = useState(false);
+  const [isBidModalOpen, setIsBidModalOpen] = useState(false);
+
+  // Add this useEffect
+  useEffect(() => {
+    console.log("isBidModalOpen:", isBidModalOpen);
+  }, [isBidModalOpen]);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -102,8 +117,95 @@ const Management = () => {
     }
   };
 
+  useEffect(() => {
+    gapi.load("client:auth2", () => {
+      gapi.client
+        .init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: DISCOVERY_DOCS,
+          scope: SCOPES,
+        })
+        .then(() => {
+          console.log("GAPI client initialized");
+        })
+        .catch((error) => {
+          console.error("Error initializing GAPI client", error);
+        });
+    });
+  }, []);
+
+  const addEventToGoogleCalendar = (eventDetails) => {
+    gapi.client.calendar.events
+      .insert({
+        calendarId: "primary",
+        resource: {
+          summary: eventDetails.title,
+          description: eventDetails.description,
+          start: {
+            dateTime: eventDetails.startDateTime,
+            timeZone: "America/Los_Angeles",
+          },
+          end: {
+            dateTime: eventDetails.endDateTime,
+            timeZone: "America/Los_Angeles",
+          },
+        },
+      })
+      .then((response) => {
+        console.log("Event created: " + response.result.htmlLink);
+      })
+      .catch((error) => {
+        console.error("Error creating event", error);
+      });
+  };
+
+  const handleBidSubmit = (bidDetails) => {
+    console.log("Bid submitted:", bidDetails);
+    addEventToGoogleCalendar({
+      title: `Bid by ${bidDetails.bidderName}`,
+      description: `Bid Amount: ${bidDetails.bidAmount}`,
+      startDateTime: new Date().toISOString(),
+      endDateTime: new Date(new Date().getTime() + 30 * 60000).toISOString(), // 30 minutes later
+    });
+    // Add any other logic for handling bid submission
+    setIsBidModalOpen(false);
+  };
+
+  const handleOpenBidModal = () => {
+    console.log("Opening bid modal");
+    setIsBidModalOpen(true);
+  };
+
+  useEffect(() => {
+    const initGapi = async () => {
+      try {
+        await gapi.client.init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: DISCOVERY_DOCS,
+          scope: SCOPES,
+        });
+        console.log("GAPI initialized successfully");
+      } catch (error) {
+        console.error("Error initializing GAPI:", error);
+      }
+    };
+    initGapi();
+  }, []);
+
   return (
-    <div className="container mx-auto mt-20 px-4 py-6">
+    <div className="container mx-auto px-4 py-6">
+      <div className="text-center mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4">Management</h1>
+        <button
+          onClick={handleOpenBidModal}
+          className="bg-green-500 text-white px-4 py-2 rounded"
+        >
+          Add Bid
+        </button>
+      </div>
+
       <h1 className="text-2xl sm:text-3xl font-bold mb-4">Completed Jobs</h1>
       <p className="text-base sm:text-lg font-semibold mb-4">
         Total value of completed jobs: ${completedJobsValue.toFixed(2)}
@@ -171,6 +273,21 @@ const Management = () => {
           onArchive={() => handleArchive(selectedJob.id)}
           downloadedJobs={downloadedJobs}
           archivedJobs={archivedJobs}
+        />
+      )}
+
+      {console.log("About to render BidModal, isBidModalOpen:", isBidModalOpen)}
+
+      {/* Render BidModal unconditionally for testing */}
+      {isBidModalOpen && (
+        <BidModal
+          isOpen={isBidModalOpen}
+          onClose={() => {
+            console.log("Closing modal");
+            setIsBidModalOpen(false);
+          }}
+          onSubmit={handleBidSubmit}
+          jobId="someJobId" // You need to provide a jobId or remove this prop if it's not needed
         />
       )}
 

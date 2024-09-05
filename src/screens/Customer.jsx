@@ -9,31 +9,10 @@ import {
   updateDoc,
   doc,
   setDoc,
-  writeBatch,
+  deleteDoc,
 } from "firebase/firestore";
 import Papa from "papaparse";
-import { v4 as uuidv4 } from "uuid";
-
-// Move handleDownload function here, outside of AddData component
-const handleDownload = async () => {
-  const db = getFirestore();
-  const jobsRef = collection(db, "jobs");
-  const querySnapshot = await getDocs(jobsRef);
-  const allJobs = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-  const csv = Papa.unparse(allJobs);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", "all_jobs_data.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
+import { v4 as uuidv4 } from "uuid"; // Import the uuid library
 
 const AddData = () => {
   const { register, handleSubmit, setValue, reset } = useForm();
@@ -111,77 +90,73 @@ const AddData = () => {
       complete: async (results) => {
         console.log("Parsed CSV data:", results.data);
         const db = getFirestore();
-        const batch = writeBatch(db);
-        let processedRows = 0;
-        let skippedRows = 0;
+        const jobsRef = collection(db, "jobs");
+
+        // Get all existing jobs
+        const existingJobsSnapshot = await getDocs(jobsRef);
+        const existingJobs = new Map(
+          existingJobsSnapshot.docs.map((doc) => [
+            doc.data().name,
+            { id: doc.id, ...doc.data() },
+          ])
+        );
 
         for (const row of results.data) {
-          // Skip empty rows
-          if (Object.keys(row).length === 0) {
-            skippedRows++;
-            continue;
-          }
-
           try {
-            const docId = row.id || uuidv4();
-            const docRef = doc(db, "jobs", docId);
+            const existingJob = existingJobs.get(row.name);
 
-            // Remove empty fields and trim whitespace
-            const cleanedRow = Object.fromEntries(
-              Object.entries(row)
-                .filter(([key, value]) => value.trim() !== "")
-                .map(([key, value]) => [key, value.trim()])
-            );
-
-            // Add the id field back if it was removed
-            cleanedRow.id = docId;
-
-            // Only add the row if there's at least one non-empty field (excluding id)
-            if (Object.keys(cleanedRow).length > 1) {
-              batch.set(docRef, cleanedRow);
-              processedRows++;
+            if (existingJob) {
+              // Update existing job
+              const docRef = doc(db, "jobs", existingJob.id);
+              await updateDoc(docRef, { ...row, id: existingJob.id });
+              existingJobs.set(row.name, { ...row, id: existingJob.id });
             } else {
-              skippedRows++;
+              // Add new job
+              const docId = uuidv4();
+              const docRef = doc(db, "jobs", docId);
+              await setDoc(docRef, { ...row, id: docId });
+              existingJobs.set(row.name, { ...row, id: docId });
             }
           } catch (error) {
-            console.error("Error processing row:", row, error);
+            console.error(
+              "Error processing job from CSV:",
+              error.message,
+              error.stack
+            );
           }
         }
 
-        try {
-          await batch.commit();
-          alert(
-            `CSV data uploaded successfully. Processed ${processedRows} rows. Skipped ${skippedRows} rows.`
-          );
-          setMatchingJobs([]);
-        } catch (error) {
-          console.error("Error committing batch:", error);
-          alert(
-            "Error uploading CSV data. Please check the console for details."
-          );
+        // Remove jobs that are not in the CSV
+        for (const [name, job] of existingJobs) {
+          if (!results.data.some((row) => row.name === name)) {
+            await deleteDoc(doc(db, "jobs", job.id));
+          }
         }
+
+        alert("CSV data processed successfully");
+        setMatchingJobs([]);
       },
       error: (error) => {
         console.error("Error parsing CSV: ", error);
-        alert("Error parsing CSV file. Please check the file format.");
       },
     });
   };
 
-  const handleDownloadAndDelete = async () => {
-    await handleDownload();
+  const handleDownload = async () => {
     const db = getFirestore();
     const jobsRef = collection(db, "jobs");
     const querySnapshot = await getDocs(jobsRef);
+    const allJobs = querySnapshot.docs.map((doc) => doc.data());
 
-    // Delete all documents
-    const batch = writeBatch(db);
-    querySnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    await batch.commit();
-    console.log("All jobs deleted");
+    const csv = Papa.unparse(allJobs);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "all_jobs_data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleAddJob = async (data) => {
@@ -298,10 +273,10 @@ const AddData = () => {
             className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
-            onClick={handleDownloadAndDelete}
-            className="bg-red-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-red-600 transition duration-200 w-full"
+            onClick={handleDownload}
+            className="bg-blue-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-blue-600 transition duration-200 w-full"
           >
-            Download and Delete All Data
+            Download Data
           </button>
           <button
             onClick={() => setIsModalOpen(true)} // Open the modal on click
@@ -346,7 +321,6 @@ const AddData = () => {
               <input
                 {...register("date", { required: true })}
                 type="text"
-                placeholder="M/DD/YYYY"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea

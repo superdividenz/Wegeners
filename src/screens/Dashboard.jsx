@@ -4,7 +4,7 @@ import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "./Modal"; // Ensure this path is correct
-import BidModal from "./BidModal"; // Ensure this path is correct
+import BidModal from "./Addon/BidModal"; // Ensure this path is correct
 import { FaMapMarkerAlt } from "react-icons/fa";
 import { gapi } from "gapi-script";
 
@@ -178,12 +178,6 @@ const Dashboard = () => {
       `}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
-        <button
-          onClick={() => setIsBidModalOpen(true)}
-          className="bg-green-500 text-white px-4 py-2 rounded mb-4"
-        >
-          Add Bid
-        </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-4">

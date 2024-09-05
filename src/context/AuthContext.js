@@ -1,34 +1,35 @@
 // src/context/AuthContext.js
-import React, { createContext, useState, useEffect } from 'react';
-import { auth } from '../firebase/firebase'; // adjust the import path as needed
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../firebase/firebase"; 
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
+
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Setting up auth state listener");
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      console.log("Auth state changed, user:", user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        setUserRole(userDoc.data()?.role);
+      } else {
+        setUserRole(null);
+      }
       setCurrentUser(user);
       setLoading(false);
     });
 
-    return () => {
-      console.log("Cleaning up auth state listener");
-      unsubscribe();
-    };
+    return unsubscribe;
   }, []);
 
-  const value = {
-    currentUser,
-    loading
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ currentUser, userRole }}>
       {!loading && children}
     </AuthContext.Provider>
   );
