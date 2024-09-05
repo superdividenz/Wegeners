@@ -9,9 +9,31 @@ import {
   updateDoc,
   doc,
   setDoc,
+  writeBatch,
 } from "firebase/firestore";
 import Papa from "papaparse";
-import { v4 as uuidv4 } from "uuid"; // Import the uuid library
+import { v4 as uuidv4 } from "uuid";
+
+// Move handleDownload function here, outside of AddData component
+const handleDownload = async () => {
+  const db = getFirestore();
+  const jobsRef = collection(db, "jobs");
+  const querySnapshot = await getDocs(jobsRef);
+  const allJobs = querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  const csv = Papa.unparse(allJobs);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "all_jobs_data.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
 const AddData = () => {
   const { register, handleSubmit, setValue, reset } = useForm();
@@ -74,42 +96,79 @@ const AddData = () => {
     Papa.parse(file, {
       header: true,
       complete: async (results) => {
-        console.log("Parsed CSV data:", results.data); // Log parsed data
+        console.log("Parsed CSV data:", results.data);
         const db = getFirestore();
+        const batch = writeBatch(db);
+        let processedRows = 0;
+        let skippedRows = 0;
 
         for (const row of results.data) {
+          // Skip empty rows
+          if (Object.keys(row).length === 0) {
+            skippedRows++;
+            continue;
+          }
+
           try {
-            // Generate a unique ID if 'id' is missing
             const docId = row.id || uuidv4();
             const docRef = doc(db, "jobs", docId);
-            await setDoc(docRef, { ...row, id: docId }); // Store ID in the document
-          } catch (error) {
-            console.error(
-              "Error adding job from CSV:",
-              error.message,
-              error.stack
+
+            // Remove empty fields and trim whitespace
+            const cleanedRow = Object.fromEntries(
+              Object.entries(row)
+                .filter(([key, value]) => value.trim() !== "")
+                .map(([key, value]) => [key, value.trim()])
             );
+
+            // Add the id field back if it was removed
+            cleanedRow.id = docId;
+
+            // Only add the row if there's at least one non-empty field (excluding id)
+            if (Object.keys(cleanedRow).length > 1) {
+              batch.set(docRef, cleanedRow);
+              processedRows++;
+            } else {
+              skippedRows++;
+            }
+          } catch (error) {
+            console.error("Error processing row:", row, error);
           }
         }
-        alert("CSV data uploaded successfully");
-        setMatchingJobs([]); // Clear matching jobs after upload
+
+        try {
+          await batch.commit();
+          alert(
+            `CSV data uploaded successfully. Processed ${processedRows} rows. Skipped ${skippedRows} rows.`
+          );
+          setMatchingJobs([]);
+        } catch (error) {
+          console.error("Error committing batch:", error);
+          alert(
+            "Error uploading CSV data. Please check the console for details."
+          );
+        }
       },
       error: (error) => {
         console.error("Error parsing CSV: ", error);
+        alert("Error parsing CSV file. Please check the file format.");
       },
     });
   };
 
-  const handleDownload = () => {
-    const csv = Papa.unparse(matchingJobs);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "jobs_data.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadAndDelete = async () => {
+    await handleDownload();
+    const db = getFirestore();
+    const jobsRef = collection(db, "jobs");
+    const querySnapshot = await getDocs(jobsRef);
+
+    // Delete all documents
+    const batch = writeBatch(db);
+    querySnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+    console.log("All jobs deleted");
   };
 
   const handleAddJob = async (data) => {
@@ -188,7 +247,7 @@ const AddData = () => {
             />
             <input
               {...register("date", { required: true })}
-              type="date"
+              type="text"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
@@ -217,10 +276,10 @@ const AddData = () => {
             className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
-            onClick={handleDownload}
-            className="bg-blue-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-blue-600 transition duration-200 w-full"
+            onClick={handleDownloadAndDelete}
+            className="bg-red-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-red-600 transition duration-200 w-full"
           >
-            Download Data
+            Download and Delete All Data
           </button>
           <button
             onClick={() => setIsModalOpen(true)} // Open the modal on click
@@ -264,7 +323,8 @@ const AddData = () => {
               />
               <input
                 {...register("date", { required: true })}
-                type="date"
+                type="text"
+                placeholder="M/DD/YYYY"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea

@@ -1,14 +1,27 @@
-// Header.jsx
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import { auth } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useAuthState } from "react-firebase-hooks/auth";
+import logo from "./img/Logo.png";
 
 const Header = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsSticky(window.scrollY > 0);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -25,64 +38,90 @@ const Header = () => {
 
   const NavLinks = () => (
     <>
-      {user && ( // Only show Management link if user is authenticated
+      {user && (
         <li>
-          <Link
+          <NavLink
             to="/management"
-            className="hover:text-blue-200 transition duration-300"
+            className={({ isActive }) =>
+              `inline-block hover:text-blue-200 hover-scale ${
+                isActive ? "text-blue-400 font-bold" : ""
+              }`
+            }
           >
             Management
-          </Link>
+          </NavLink>
         </li>
       )}
       {user && (
         <li>
-          <Link
+          <NavLink
             to="/dashboard"
-            className="hover:text-blue-200 transition duration-300"
+            className={({ isActive }) =>
+              `inline-block hover:text-blue-200 hover-scale ${
+                isActive ? "text-blue-400 font-bold" : ""
+              }`
+            }
           >
             Dashboard
-          </Link>
+          </NavLink>
         </li>
       )}
       {user && (
         <li>
-          <Link
+          <NavLink
             to="/customer"
-            className="hover:text-blue-200 transition duration-300"
+            className={({ isActive }) =>
+              `inline-block hover:text-blue-200 hover-scale ${
+                isActive ? "text-blue-400 font-bold" : ""
+              }`
+            }
           >
             Customer
-          </Link>
+          </NavLink>
         </li>
       )}
       {user ? (
         <li>
           <button
             onClick={handleLogout}
-            className="hover:text-blue-200 transition duration-300"
+            className="inline-block hover:text-blue-200 hover-scale"
           >
             Logout
           </button>
         </li>
       ) : (
         <li>
-          <Link
+          <NavLink
             to="/login"
-            className="hover:text-blue-200 transition duration-300"
+            className={({ isActive }) =>
+              `inline-block hover:text-blue-200 hover-scale ${
+                isActive ? "text-blue-400 font-bold" : ""
+              }`
+            }
           >
             Login
-          </Link>
+          </NavLink>
         </li>
       )}
     </>
   );
 
   return (
-    <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
-      <div className="container mx-auto px-4 py-3">
+    <header
+      className={`bg-gradient-to-r from-black to-gray-800 text-white shadow-lg fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isSticky ? "py-2" : "py-3"
+      }`}
+    >
+      <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <span className="font-bold text-xl">Wegener Sealer</span>
+            <img
+              src={logo}
+              alt="Wegener Sealer Logo"
+              className={`transition-all duration-300 hover:scale-110 ${
+                isSticky ? "h-10" : "h-12"
+              }`}
+            />
           </div>
           <nav className="hidden md:block">
             <ul className="flex space-x-6">

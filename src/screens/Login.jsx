@@ -1,3 +1,4 @@
+// screens/Login.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase/firebase";
@@ -30,7 +31,7 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Sign in
+            Log In
           </h2>
         </div>
         <form className="space-y-6" onSubmit={handleLogin}>
