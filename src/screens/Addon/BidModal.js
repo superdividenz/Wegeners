@@ -1,37 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../../firebase/firebase.js";
 
 const BidModal = ({ isOpen, onClose, onSubmit, jobId }) => {
-  console.log("BidModal rendered, isOpen:", isOpen);
-  useEffect(() => {
-    console.log("BidModal rendered, isOpen:", isOpen);
-  }, [isOpen]);
-
   const [bidAmount, setBidAmount] = useState("");
   const [bidderName, setBidderName] = useState("");
-  const [proposedStartDate, setProposedStartDate] = useState(""); // New state
-  const [estimatedDuration, setEstimatedDuration] = useState(""); // New state
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
-  const [price, setPrice] = useState("");
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     const bidData = {
       jobId,
       bidAmount: Number(bidAmount),
       bidderName,
-      proposedStartDate,
-      estimatedDuration,
+      email,
+      phone,
       address,
       additionalInfo,
-      price: Number(price),
-      status: "pending", // Initial status
+      status: "pending",
       createdAt: new Date(),
     };
 
     try {
-      // Add bid to the 'bids' collection
       const docRef = await addDoc(collection(db, "bids"), bidData);
       console.log("Bid submitted with ID: ", docRef.id);
       onSubmit(bidData);
@@ -52,34 +45,38 @@ const BidModal = ({ isOpen, onClose, onSubmit, jobId }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-md mx-auto">
         <h2 className="text-xl font-bold mb-4">Submit a Bid</h2>
-        <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-2">
           <input
             type="text"
             placeholder="Name"
             value={bidderName}
             onChange={(e) => setBidderName(e.target.value)}
             className="w-full p-2 border rounded"
+            required
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+          />
+          <input
+            type="tel"
+            placeholder="Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
           />
           <input
             type="number"
-            placeholder="Bid Amount"
+            placeholder="Amount"
             value={bidAmount}
             onChange={(e) => setBidAmount(e.target.value)}
             className="w-full p-2 border rounded"
-          />
-          <input
-            type="date"
-            placeholder="Proposed Start Date"
-            value={proposedStartDate}
-            onChange={(e) => setProposedStartDate(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-          <input
-            type="text"
-            placeholder="Estimated Duration (e.g., '2 weeks')"
-            value={estimatedDuration}
-            onChange={(e) => setEstimatedDuration(e.target.value)}
-            className="w-full p-2 border rounded"
+            required
           />
           <div className="flex space-x-2">
             <input
@@ -90,42 +87,37 @@ const BidModal = ({ isOpen, onClose, onSubmit, jobId }) => {
               className="flex-grow p-2 border rounded"
             />
             <button
+              type="button"
               onClick={openInGoogleMaps}
-              className="bg-blue-500 text-white px-4 py-2 rounded"
+              className="bg-green-500 text-white px-4 py-2 rounded"
               disabled={!address}
             >
               View on Map
             </button>
           </div>
           <textarea
-            placeholder="Info"
+            placeholder="Additional Info"
             value={additionalInfo}
             onChange={(e) => setAdditionalInfo(e.target.value)}
             className="w-full p-2 border rounded"
-            rows="1"
+            rows="3"
           />
-          <input
-            type="number"
-            placeholder="Price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div className="mt-4 flex justify-end space-x-2">
-          <button
-            onClick={onClose}
-            className="bg-gray-300 text-black px-4 py-2 rounded"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-          >
-            Submit
-          </button>
-        </div>
+          <div className="flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-300 text-black px-4 py-2 rounded"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bg-blue-500 text-white px-4 py-2 rounded"
+            >
+              Submit Bid
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
