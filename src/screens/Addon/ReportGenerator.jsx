@@ -23,7 +23,16 @@ const ReportGenerator = ({ jobs }) => {
         acc[month] = (acc[month] || 0) + parseFloat(job.price || 0);
         return acc;
       }, {});
-      return { type: "Monthly Revenue", data: monthlyRevenue };
+      return {
+        type: "Monthly Revenue",
+        data: monthlyRevenue,
+        jobDetails: filteredJobs.map((job) => ({
+          date: job.date,
+          description: job.description,
+          price: job.price,
+          completed: job.completed ? "Yes" : "No",
+        })),
+      };
     };
 
     const generateJobCompletionRateReport = (filteredJobs) => {
@@ -36,8 +45,14 @@ const ReportGenerator = ({ jobs }) => {
         data: {
           total: totalJobs,
           completed: completedJobs,
-          rate: completionRate,
+          rate: Number(completionRate.toFixed(2)),
         },
+        jobDetails: filteredJobs.map((job) => ({
+          date: job.date,
+          description: job.description,
+          price: job.price,
+          completed: job.completed ? "Yes" : "No",
+        })),
       };
     };
 

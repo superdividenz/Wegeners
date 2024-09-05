@@ -3,34 +3,24 @@ import { db } from "../firebase/firebase";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import Modal from "./Addon/Modal";
+import Modal from "./Modal"; // Ensure this path is correct
+import BidModal from "./BidModal"; // Ensure this path is correct
 import { FaMapMarkerAlt } from "react-icons/fa";
+import { gapi } from "gapi-script";
 
-const highlightClass = `
-  .highlight {
-    background-color: #ffeb3b;
-    border-radius: 50%;
-  }
-  .react-calendar {
-    width: 100%;
-    max-width: 100%;
-    background: white;
-    border: 1px solid #a0a096;
-    font-family: Arial, Helvetica, sans-serif;
-    line-height: 1.125em;
-  }
-  @media (max-width: 640px) {
-    .react-calendar__month-view__days__day {
-      padding: 0.5em 0;
-    }
-  }
-`;
+const CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
+const API_KEY = "YOUR_API_KEY";
+const DISCOVERY_DOCS = [
+  "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest",
+];
+const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 const Dashboard = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBidModalOpen, setIsBidModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
 
@@ -55,6 +45,24 @@ const Dashboard = () => {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  useEffect(() => {
+    gapi.load("client:auth2", () => {
+      gapi.client
+        .init({
+          apiKey: API_KEY,
+          clientId: CLIENT_ID,
+          discoveryDocs: DISCOVERY_DOCS,
+          scope: SCOPES,
+        })
+        .then(() => {
+          console.log("GAPI client initialized");
+        })
+        .catch((error) => {
+          console.error("Error initializing GAPI client", error);
+        });
+    });
+  }, []);
 
   const handleJobClick = (job) => {
     setSelectedJob(job);
@@ -86,6 +94,40 @@ const Dashboard = () => {
     }
   };
 
+  const addEventToGoogleCalendar = (eventDetails) => {
+    gapi.client.calendar.events
+      .insert({
+        calendarId: "primary",
+        resource: {
+          summary: eventDetails.title,
+          description: eventDetails.description,
+          start: {
+            dateTime: eventDetails.startDateTime,
+            timeZone: "America/Los_Angeles",
+          },
+          end: {
+            dateTime: eventDetails.endDateTime,
+            timeZone: "America/Los_Angeles",
+          },
+        },
+      })
+      .then((response) => {
+        console.log("Event created: " + response.result.htmlLink);
+      })
+      .catch((error) => {
+        console.error("Error creating event", error);
+      });
+  };
+
+  const handleBidSubmit = (bidDetails) => {
+    addEventToGoogleCalendar({
+      title: `Bid by ${bidDetails.bidderName}`,
+      description: `Bid Amount: ${bidDetails.bidAmount}`,
+      startDateTime: new Date().toISOString(),
+      endDateTime: new Date(new Date().getTime() + 30 * 60000).toISOString(), // 30 minutes later
+    });
+  };
+
   const jobDates = jobs
     .map((job) => {
       if (job.date) {
@@ -115,9 +157,33 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <style>{highlightClass}</style>
+      <style>{`
+        .highlight {
+          background-color: #ffeb3b;
+          border-radius: 50%;
+        }
+        .react-calendar {
+          width: 100%;
+          max-width: 100%;
+          background: white;
+          border: 1px solid #a0a096;
+          font-family: Arial, Helvetica, sans-serif;
+          line-height: 1.125em;
+        }
+        @media (max-width: 640px) {
+          .react-calendar__month-view__days__day {
+            padding: 0.5em 0;
+          }
+        }
+      `}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
+        <button
+          onClick={() => setIsBidModalOpen(true)}
+          className="bg-green-500 text-white px-4 py-2 rounded mb-4"
+        >
+          Add Bid
+        </button>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-4">
@@ -154,6 +220,11 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+      <BidModal
+        isOpen={isBidModalOpen}
+        onClose={() => setIsBidModalOpen(false)}
+        onSubmit={handleBidSubmit}
+      />
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {selectedJob && (
           <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-md mx-auto">
@@ -213,13 +284,6 @@ const Dashboard = () => {
           </div>
         )}
       </Modal>
-      {isMapModalOpen && (
-        <JobsMapModal
-          jobs={jobs}
-          apiKey="YOUR_GOOGLE_MAPS_API_KEY" // Replace with your actual API key
-          onClose={() => setIsMapModalOpen(false)}
-        />
-      )}
     </div>
   );
 };
