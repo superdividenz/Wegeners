@@ -60,7 +60,6 @@ const BidModal = ({ isOpen, onClose, onSubmit, jobId }) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full p-2 border rounded"
-            required
           />
           <input
             type="tel"
@@ -76,7 +75,6 @@ const BidModal = ({ isOpen, onClose, onSubmit, jobId }) => {
             value={bidAmount}
             onChange={(e) => setBidAmount(e.target.value)}
             className="w-full p-2 border rounded"
-            required
           />
           <div className="flex space-x-2">
             <input
@@ -96,11 +94,10 @@ const BidModal = ({ isOpen, onClose, onSubmit, jobId }) => {
             </button>
           </div>
           <textarea
-            placeholder="Additional Info"
+            placeholder="Info"
             value={additionalInfo}
             onChange={(e) => setAdditionalInfo(e.target.value)}
             className="w-full p-2 border rounded"
-            rows="3"
           />
           <div className="flex justify-end space-x-2">
             <button
