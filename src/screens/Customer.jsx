@@ -228,7 +228,7 @@ const AddData = () => {
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
-              {...register("email", { required: true })}
+              {...register("email", { required: false })}
               placeholder="Email"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -245,15 +245,17 @@ const AddData = () => {
             <input
               {...register("date", { required: true })}
               type="text"
+              placeholder="Date"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               {...register("price", { required: true })}
               type="Price"
+              placeholder="Price"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <textarea
-              {...register("info", { required: true })}
+              {...register("info", { required: false })}
               placeholder="Info"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />

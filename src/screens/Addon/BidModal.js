@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, query, where, getDocs, updateDoc, arrayUnion, doc } from "firebase/firestore";
 import { db } from "../../firebase/firebase.js";
 
 const BidModal = ({ isOpen, onClose, onSubmit, jobId }) => {
@@ -25,10 +25,31 @@ const BidModal = ({ isOpen, onClose, onSubmit, jobId }) => {
     };
 
     try {
-      const docRef = await addDoc(collection(db, "bids"), bidData);
-      console.log("Bid submitted with ID: ", docRef.id);
-      onSubmit(bidData);
-      onClose();
+      // Check if a bid from this user for this job already exists
+      const existingBidsQuery = query(
+        collection(db, "bids"),
+        where("jobId", "==", jobId),
+        where("bidderName", "==", bidderName)
+      );
+      const existingBidsSnapshot = await getDocs(existingBidsQuery);
+
+      if (existingBidsSnapshot.empty) {
+        // If no existing bid, add a new one
+        const docRef = await addDoc(collection(db, "bids"), bidData);
+        console.log("Bid submitted with ID: ", docRef.id);
+
+        // Update the job document to include the new bid
+        const jobRef = doc(db, "jobs", jobId);
+        await updateDoc(jobRef, {
+          bids: arrayUnion(docRef.id)
+        });
+
+        onSubmit(bidData);
+        onClose();
+      } else {
+        console.log("A bid from this user for this job already exists");
+        // Optionally, show an error message to the user
+      }
     } catch (error) {
       console.error("Error submitting bid: ", error);
     }
