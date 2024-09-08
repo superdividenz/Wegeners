@@ -10,9 +10,11 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  addDoc,
+  collection as firestoreCollection,
 } from "firebase/firestore";
 import Papa from "papaparse";
-import { v4 as uuidv4 } from "uuid"; // Import the uuid library
+import { v4 as uuidv4 } from "uuid";
 
 const AddData = () => {
   const { register, handleSubmit, setValue, reset } = useForm();
@@ -159,6 +161,41 @@ const AddData = () => {
     document.body.removeChild(link);
   };
 
+  const addEventToCalendar = async (jobData) => {
+    const db = getFirestore();
+    const eventsRef = firestoreCollection(db, "events");
+
+    try {
+      console.log("Attempting to add event to calendar for job:", jobData);
+
+      // Check if an event with this jobId already exists
+      const q = query(eventsRef, where("jobId", "==", jobData.id));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // No existing event found, so add a new one
+        const eventData = {
+          title: jobData.name,
+          start: new Date(jobData.date).toISOString(),
+          end: new Date(jobData.date).toISOString(),
+          description: jobData.info || "",
+          jobId: jobData.id,
+        };
+
+        const docRef = await addDoc(eventsRef, eventData);
+        console.log("Event added to calendar successfully with ID:", docRef.id);
+        console.log("Event data:", eventData);
+      } else {
+        console.log("Event already exists in calendar for job:", jobData.id);
+      }
+    } catch (error) {
+      console.error("Error adding event to calendar: ", error);
+      alert(
+        "Error adding event to calendar. Please check console for details."
+      );
+    }
+  };
+
   const handleAddJob = async (data) => {
     const db = getFirestore();
     const jobsRef = collection(db, "jobs");
@@ -170,16 +207,23 @@ const AddData = () => {
       return;
     }
 
-    const docId = uuidv4(); // Generate a unique ID for the new job
+    const docId = uuidv4();
     const docRef = doc(db, "jobs", docId);
 
     try {
-      await setDoc(docRef, { ...data, id: docId }); // Store ID in the document
-      alert("Job added successfully");
-      setIsModalOpen(false); // Close the modal after adding the job
-      reset(); // Reset the form fields
+      const jobData = { ...data, id: docId };
+      await setDoc(docRef, jobData);
+      console.log("Job added successfully:", jobData);
+
+      // Add the job to the calendar
+      await addEventToCalendar(jobData);
+
+      alert("Job added successfully and event added to calendar");
+      setIsModalOpen(false);
+      reset();
     } catch (error) {
       console.error("Error adding job: ", error);
+      alert("Error adding job. Please check console for details.");
     }
   };
   const handleClickOutside = (event) => {
@@ -233,7 +277,7 @@ const AddData = () => {
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
-              {...register("phone", { required: true })}
+              {...register("phone", { required: false })}
               placeholder="Phone"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -306,12 +350,12 @@ const AddData = () => {
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
-                {...register("email", { required: true })}
+                {...register("email", { required: false })}
                 placeholder="Email"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
-                {...register("phone", { required: true })}
+                {...register("phone", { required: false })}
                 placeholder="Phone"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -331,7 +375,7 @@ const AddData = () => {
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
-                {...register("info", { required: true })}
+                {...register("info", { required: false })}
                 placeholder="info"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />

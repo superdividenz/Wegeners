@@ -18,17 +18,21 @@ const EditBidModal = ({ bid, onClose, onUpdate }) => {
       const updatedBid = { ...editedBid, acceptedDate };
       await updateDoc(bidRef, updatedBid);
 
-      // If the bid is accepted and has an accepted date, add it to the jobs collection
-      if (updatedBid.status === 'accepted' && acceptedDate) {
+      // If the bid status is changed to 'accepted', add it to the jobs collection
+      if (updatedBid.status === 'accepted' && bid.status !== 'accepted') {
+        const formattedDate = new Date(acceptedDate).toLocaleDateString('en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          year: 'numeric'
+        });
+        
         const jobData = {
-          bidId: updatedBid.id,
-          bidderName: updatedBid.bidderName,
-          bidAmount: updatedBid.bidAmount,
-          address: updatedBid.address,
-          phone: updatedBid.phone,
+          name: updatedBid.bidderName,
           email: updatedBid.email,
-          scheduledDate: acceptedDate,
-          createdAt: new Date(),
+          address: updatedBid.address,
+          price: updatedBid.bidAmount,
+          date: formattedDate,
+          info: updatedBid.additionalInfo || '',
         };
         await addDoc(collection(db, 'jobs'), jobData);
       }
