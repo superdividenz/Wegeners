@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  setDoc,
+  deleteDoc,
+} from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "./Modal"; // Ensure this path is correct
 import BidModal from "./Addon/BidModal"; // Ensure this path is correct
 import { FaMapMarkerAlt } from "react-icons/fa";
 import { gapi } from "gapi-script";
+import { v4 as uuidv4 } from "uuid";
 
 const CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com";
 const API_KEY = "YOUR_API_KEY";
@@ -23,6 +31,8 @@ const Dashboard = () => {
   const [isBidModalOpen, setIsBidModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
+  const [bids, setBids] = useState([]);
+  const [selectedBid, setSelectedBid] = useState(null);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -32,6 +42,7 @@ const Dashboard = () => {
       const jobList = jobSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
+        type: "job", // Explicitly set the type
       }));
       setJobs(jobList);
     } catch (error) {
@@ -42,9 +53,25 @@ const Dashboard = () => {
     }
   }, []);
 
+  const fetchBids = useCallback(async () => {
+    try {
+      const bidsCollection = collection(db, "bids");
+      const bidSnapshot = await getDocs(bidsCollection);
+      const bidList = bidSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        type: "bid", // Explicitly set the type
+      }));
+      setBids(bidList);
+    } catch (error) {
+      console.error("Error fetching bids:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchJobs();
-  }, [fetchJobs]);
+    fetchBids();
+  }, [fetchJobs, fetchBids]);
 
   useEffect(() => {
     gapi.load("client:auth2", () => {
@@ -67,6 +94,11 @@ const Dashboard = () => {
   const handleJobClick = (job) => {
     setSelectedJob(job);
     setIsModalOpen(true);
+  };
+
+  const handleBidClick = (bid) => {
+    setSelectedBid(bid);
+    setIsBidModalOpen(true);
   };
 
   const openInGoogleMaps = (address) => {
@@ -147,6 +179,71 @@ const Dashboard = () => {
     return false;
   });
 
+  const handleBidUpdate = async (updatedBid) => {
+    try {
+      const bidRef = doc(db, "bids", updatedBid.id);
+      await updateDoc(bidRef, updatedBid);
+      setBids((prevBids) =>
+        prevBids.map((bid) => (bid.id === updatedBid.id ? updatedBid : bid))
+      );
+      setSelectedBid(null);
+      setIsBidModalOpen(false);
+    } catch (error) {
+      console.error("Error updating bid: ", error);
+    }
+  };
+
+  const handleBidAccept = async (bid) => {
+    try {
+      // Add to jobs collection
+      const jobDocId = uuidv4();
+      const jobDocRef = doc(db, "jobs", jobDocId);
+      const jobData = { ...bid, id: jobDocId };
+      await setDoc(jobDocRef, jobData);
+
+      // Add to calendar
+      addEventToGoogleCalendar({
+        title: bid.name,
+        description: bid.info,
+        startDateTime: new Date(bid.date).toISOString(),
+        endDateTime: new Date(bid.date).toISOString(),
+      });
+
+      // Remove from bids collection
+      await deleteDoc(doc(db, "bids", bid.id));
+
+      // Update state
+      setJobs((prevJobs) => [...prevJobs, jobData]);
+      setBids((prevBids) => prevBids.filter((b) => b.id !== bid.id));
+      setSelectedBid(null);
+      setIsBidModalOpen(false);
+    } catch (error) {
+      console.error("Error accepting bid: ", error);
+    }
+  };
+
+  const allEvents = [...jobs, ...bids].map((item) => {
+    if (item.date && typeof item.date === "string") {
+      const [month, day, year] = item.date.split("/");
+      return {
+        id: item.id,
+        title: item.name,
+        start: new Date(year, month - 1, day),
+        end: new Date(year, month - 1, day),
+        type: item.type || (item.hasOwnProperty("completed") ? "job" : "bid"),
+      };
+    } else {
+      // Handle items without a valid date
+      return {
+        id: item.id,
+        title: item.name,
+        start: new Date(), // Use current date or some default
+        end: new Date(),
+        type: item.type || (item.hasOwnProperty("completed") ? "job" : "bid"),
+      };
+    }
+  });
+
   if (loading) {
     return <div className="text-center mt-8 p-4">Loading...</div>;
   }
@@ -175,6 +272,18 @@ const Dashboard = () => {
             padding: 0.5em 0;
           }
         }
+        .highlight-job {
+          background-color: #3b82f6;
+          border-radius: 50%;
+        }
+        .highlight-bid {
+          background-color: #fbbf24;
+          border-radius: 50%;
+        }
+        .highlight-both {
+          background: linear-gradient(to right, #3b82f6 50%, #fbbf24 50%);
+          border-radius: 50%;
+        }
       `}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
@@ -187,7 +296,28 @@ const Dashboard = () => {
             value={date}
             tileClassName={({ date, view }) => {
               const dateString = date.toDateString();
-              return jobDates.includes(dateString) ? "highlight" : null;
+              const hasJob = jobs.some((job) => {
+                if (job.date && typeof job.date === "string") {
+                  const [month, day, year] = job.date.split("/");
+                  return (
+                    new Date(year, month - 1, day).toDateString() === dateString
+                  );
+                }
+                return false;
+              });
+              const hasBid = bids.some((bid) => {
+                if (bid.date && typeof bid.date === "string") {
+                  const [month, day, year] = bid.date.split("/");
+                  return (
+                    new Date(year, month - 1, day).toDateString() === dateString
+                  );
+                }
+                return false;
+              });
+              if (hasJob && hasBid) return "highlight highlight-both";
+              if (hasJob) return "highlight highlight-job";
+              if (hasBid) return "highlight highlight-bid";
+              return null;
             }}
             className="react-calendar"
           />
@@ -195,22 +325,36 @@ const Dashboard = () => {
 
         <div className="bg-white shadow rounded-lg p-4">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">
-            Jobs on {date.toLocaleDateString()}
+            Events on {date.toLocaleDateString()}
           </h2>
-          {jobsForSelectedDate.length > 0 ? (
+          {allEvents.filter(
+            (event) => event.start.toDateString() === date.toDateString()
+          ).length > 0 ? (
             <ul className="space-y-2">
-              {jobsForSelectedDate.map((job) => (
-                <li
-                  key={job.id}
-                  className="p-3 hover:bg-gray-100 rounded cursor-pointer transition duration-200"
-                  onClick={() => handleJobClick(job)}
-                >
-                  {job.date || "N/A"} - {job.address || "N/A"}
-                </li>
-              ))}
+              {allEvents
+                .filter(
+                  (event) => event.start.toDateString() === date.toDateString()
+                )
+                .map((event) => (
+                  <li
+                    key={event.id}
+                    className={`p-3 hover:bg-gray-100 rounded cursor-pointer transition duration-200 ${
+                      event.type === "job" ? "bg-blue-100" : "bg-yellow-100"
+                    }`}
+                    onClick={() =>
+                      event.type === "job"
+                        ? handleJobClick(event)
+                        : handleBidClick(event)
+                    }
+                  >
+                    {event.title} - {event.type === "job" ? "Job" : "Bid"}
+                  </li>
+                ))}
             </ul>
           ) : (
-            <p className="text-center p-4">No jobs scheduled for this date.</p>
+            <p className="text-center p-4">
+              No events scheduled for this date.
+            </p>
           )}
         </div>
       </div>
@@ -275,6 +419,101 @@ const Dashboard = () => {
                 </button>
               )}
             </div>
+          </div>
+        )}
+      </Modal>
+      <Modal isOpen={isBidModalOpen} onClose={() => setIsBidModalOpen(false)}>
+        {selectedBid && (
+          <div className="bg-white p-4 rounded-lg shadow-lg w-full max-w-md mx-auto">
+            <h2 className="text-xl font-bold mb-4">Bid Details</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleBidUpdate(selectedBid);
+              }}
+            >
+              <div className="space-y-2 text-sm">
+                <input
+                  value={selectedBid.name}
+                  onChange={(e) =>
+                    setSelectedBid({ ...selectedBid, name: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                  placeholder="Name"
+                />
+                <input
+                  value={selectedBid.date}
+                  onChange={(e) =>
+                    setSelectedBid({ ...selectedBid, date: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                  placeholder="Date"
+                />
+                <input
+                  value={selectedBid.email}
+                  onChange={(e) =>
+                    setSelectedBid({ ...selectedBid, email: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                  placeholder="Email"
+                />
+                <input
+                  value={selectedBid.phone}
+                  onChange={(e) =>
+                    setSelectedBid({ ...selectedBid, phone: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                  placeholder="Phone"
+                />
+                <input
+                  value={selectedBid.address}
+                  onChange={(e) =>
+                    setSelectedBid({ ...selectedBid, address: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                  placeholder="Address"
+                />
+                <textarea
+                  value={selectedBid.info}
+                  onChange={(e) =>
+                    setSelectedBid({ ...selectedBid, info: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                  placeholder="Info"
+                />
+                <input
+                  value={selectedBid.price}
+                  onChange={(e) =>
+                    setSelectedBid({ ...selectedBid, price: e.target.value })
+                  }
+                  className="w-full p-2 border rounded"
+                  placeholder="Price"
+                  type="number"
+                />
+              </div>
+              <div className="mt-6 flex flex-col space-y-2">
+                <button
+                  type="submit"
+                  className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-200"
+                >
+                  Update Bid
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleBidAccept(selectedBid)}
+                  className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
+                >
+                  Accept Bid
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsBidModalOpen(false)}
+                  className="w-full bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+                >
+                  Close
+                </button>
+              </div>
+            </form>
           </div>
         )}
       </Modal>
