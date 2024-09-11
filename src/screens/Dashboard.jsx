@@ -10,10 +10,6 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [date, setDate] = useState(new Date());
 
-  // Define the missing state variables
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
@@ -38,8 +34,7 @@ const Dashboard = () => {
   }, [fetchJobs]);
 
   const handleJobClick = (job) => {
-    setSelectedJob(job);
-    setIsModalOpen(true);
+    // Removed the setSelectedJob and setIsModalOpen calls
   };
 
   const allEvents = jobs.map((item) => {
