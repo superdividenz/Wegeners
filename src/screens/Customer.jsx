@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import {
   getFirestore,
@@ -12,6 +12,7 @@ import {
   deleteDoc,
   addDoc,
   collection as firestoreCollection,
+  // eslint-disable-next-line no-unused-vars
   getDoc,
 } from "firebase/firestore";
 import Papa from "papaparse";
@@ -23,7 +24,7 @@ const AddData = () => {
   const [matchingJobs, setMatchingJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
-  const [isBidModalOpen, setIsBidModalOpen] = useState(false);
+  const modalRef = useRef(null); // Create a ref for the modal
 
   const handleSearch = async (e) => {
     const input = e.target.value;
@@ -229,72 +230,21 @@ const AddData = () => {
     }
   };
 
-  const handleAddBid = async (data) => {
-    const db = getFirestore();
-    const bidsRef = collection(db, "bids");
-    const q = query(bidsRef, where("name", "==", data.name));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      alert("A bid with this name already exists.");
-      return;
-    }
-
-    const docId = uuidv4();
-    const docRef = doc(db, "bids", docId);
-
-    try {
-      const bidData = { ...data, id: docId, status: "pending" };
-      await setDoc(docRef, bidData);
-      console.log("Bid added successfully:", bidData);
-
-      alert("Bid added successfully");
-      setIsBidModalOpen(false);
-      reset();
-    } catch (error) {
-      console.error("Error adding bid: ", error);
-      alert("Error adding bid. Please check console for details.");
-    }
-  };
-
-  const handleAcceptBid = async (bidId) => {
-    const db = getFirestore();
-    const bidRef = doc(db, "bids", bidId);
-    const jobsRef = collection(db, "jobs");
-
-    try {
-      const bidSnapshot = await getDoc(bidRef);
-      if (bidSnapshot.exists()) {
-        const bidData = bidSnapshot.data();
-
-        // Add to jobs collection
-        const jobDocId = uuidv4();
-        const jobDocRef = doc(db, "jobs", jobDocId);
-        const jobData = { ...bidData, id: jobDocId };
-        await setDoc(jobDocRef, jobData);
-
-        // Add to calendar
-        await addEventToCalendar(jobData);
-
-        // Update bid status
-        await updateDoc(bidRef, { status: "accepted" });
-
-        alert("Bid accepted and added to jobs and calendar");
-      } else {
-        alert("Bid not found");
-      }
-    } catch (error) {
-      console.error("Error accepting bid: ", error);
-      alert("Error accepting bid. Please check console for details.");
-    }
-  };
-
   const handleClickOutside = (event) => {
-    if (event.target.classList.contains("modal-overlay")) {
-      setIsModalOpen(false);
-      setIsBidModalOpen(false);
+    // Check if the click is outside the modal
+    if (modalRef.current && !modalRef.current.contains(event.target)) {
+      setIsModalOpen(false); // Close the modal
     }
   };
+
+  useEffect(() => {
+    // Add event listener for clicks
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Clean up the event listener on component unmount
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -394,22 +344,16 @@ const AddData = () => {
           >
             Add Job Manually
           </button>
-          <button
-            onClick={() => setIsBidModalOpen(true)}
-            className="bg-yellow-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-yellow-600 transition duration-200 w-full"
-          >
-            Add Bid
-          </button>
         </div>
       </div>
 
       {/* Modal for adding a job manually */}
       {isModalOpen && (
-        <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay"
-          onClick={handleClickOutside}
-        >
-          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay">
+          <div
+            ref={modalRef} // Attach the ref to the modal
+            className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto"
+          >
             <h3 className="font-bold text-lg text-gray-700 mb-4">
               Add New Job
             </h3>
@@ -462,74 +406,6 @@ const AddData = () => {
                   className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
                 >
                   Add Job
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal for adding a bid */}
-      {isBidModalOpen && (
-        <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay"
-          onClick={handleClickOutside}
-        >
-          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto">
-            <h3 className="font-bold text-lg text-gray-700 mb-4">
-              Add New Bid
-            </h3>
-            <form onSubmit={handleSubmit(handleAddBid)} className="space-y-4">
-              <input
-                {...register("name", { required: true })}
-                placeholder="Name"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("email", { required: false })}
-                placeholder="Email"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("phone", { required: false })}
-                placeholder="Phone"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("address", { required: true })}
-                placeholder="Address"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("date", { required: true })}
-                type="text"
-                placeholder="Date"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("price", { required: true })}
-                type="number"
-                placeholder="Price"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <textarea
-                {...register("info", { required: false })}
-                placeholder="Info"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setIsBidModalOpen(false)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
-                >
-                  Add Bid
                 </button>
               </div>
             </form>
