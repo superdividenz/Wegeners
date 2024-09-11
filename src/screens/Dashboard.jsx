@@ -9,6 +9,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [date, setDate] = useState(new Date());
+  const [selectedJob, setSelectedJob] = useState(null); // State for selected job
+  const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -34,7 +36,13 @@ const Dashboard = () => {
   }, [fetchJobs]);
 
   const handleJobClick = (job) => {
-    // Removed the setSelectedJob and setIsModalOpen calls
+    setSelectedJob(job); // Set the selected job
+    setIsModalOpen(true); // Open the modal
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false); // Close the modal
+    setSelectedJob(null); // Clear selected job
   };
 
   const allJobs = jobs.map((item) => {
@@ -144,9 +152,7 @@ const Dashboard = () => {
                     className={`p-3 hover:bg-gray-100 rounded cursor-pointer transition duration-200 ${
                       job.type === "job" ? "bg-blue-100" : "bg-yellow-200"
                     }`}
-                    onClick={
-                      () => (job.type === "job" ? handleJobClick(job) : null) // Ensure there's a fallback for non-job jobs
-                    }
+                    onClick={() => handleJobClick(job)} // Updated to use handleJobClick
                   >
                     {job.title} {/* Display the job title */}
                   </li>
@@ -157,6 +163,55 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {isModalOpen && ( // Render modal conditionally
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70">
+          {" "}
+          {/* Increased opacity for better contrast */}
+          <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+            {" "}
+            {/* Adjusted padding and max width */}
+            <h2 className="text-2xl font-bold text-center mb-4">
+              {selectedJob?.name}
+            </h2>{" "}
+            {/* Centered title and increased size */}
+            <p className="mb-2">
+              <strong>Name:</strong> {selectedJob?.name}
+            </p>
+            <p className="mb-2">
+              <strong>Address:</strong> {selectedJob?.address}
+            </p>
+            <p className="mb-2">
+              <strong>Date:</strong> {selectedJob?.date}
+            </p>
+            <p className="mb-2">
+              <strong>Phone:</strong> {selectedJob?.phone}
+            </p>
+            <p className="mb-2">
+              <strong>Info:</strong> {selectedJob?.info}
+            </p>
+            <p className="mb-4">
+              <strong>Price:</strong> {selectedJob?.price}
+            </p>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                selectedJob?.address
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline mb-4 block text-center" // Centered link
+            >
+              View on Map
+            </a>
+            <button
+              onClick={closeModal}
+              className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-200" // Full width button with hover effect
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
