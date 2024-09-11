@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import ReportGenerator from "./Addon/ReportGenerator";
 
+const Management = () => {
+  // Define state variables
+  const [showArchivedJobs, setShowArchivedJobs] = useState(false);
 
-
+  // Ensure the return statement is inside the component function
   return (
     <div className="container mx-auto px-4 py-6">
       <h1 className="text-3xl font-bold mb-6 text-center">Management</h1>
-
-      
 
       <div className="mb-8">
         <h2 className="text-2xl font-semibold mb-4">Jobs</h2>
@@ -35,8 +36,6 @@ import ReportGenerator from "./Addon/ReportGenerator";
         <h2 className="text-2xl font-semibold mb-4">Reports</h2>
         <ReportGenerator jobs={[]} /> {/* Pass your jobs data here */}
       </div>
-
-      
     </div>
   );
 };

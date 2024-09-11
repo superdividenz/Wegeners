@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
@@ -8,8 +8,11 @@ const Dashboard = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [date, setDate] = useState(new Date());
+
+  // Define the missing state variables
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -38,42 +41,6 @@ const Dashboard = () => {
     setSelectedJob(job);
     setIsModalOpen(true);
   };
-
-  const markJobAsCompleted = async (jobId) => {
-    try {
-      const jobRef = doc(db, "jobs", jobId);
-      await updateDoc(jobRef, {
-        completed: true,
-      });
-      setJobs((prevJobs) =>
-        prevJobs.map((job) =>
-          job.id === jobId ? { ...job, completed: true } : job
-        )
-      );
-      setSelectedJob((prevJob) => ({ ...prevJob, completed: true }));
-    } catch (error) {
-      console.error("Error marking job as completed: ", error);
-    }
-  };
-
-  const jobDates = jobs
-    .map((job) => {
-      if (job.date) {
-        const [month, day, year] = job.date.split("/");
-        return new Date(year, month - 1, day).toDateString();
-      }
-      return null;
-    })
-    .filter(Boolean);
-
-  const jobsForSelectedDate = jobs.filter((job) => {
-    if (job.date) {
-      const [month, day, year] = job.date.split("/");
-      const jobDate = new Date(year, month - 1, day).toDateString();
-      return jobDate === date.toDateString();
-    }
-    return false;
-  });
 
   const allEvents = jobs.map((item) => {
     if (item.date && typeof item.date === "string") {
@@ -182,20 +149,17 @@ const Dashboard = () => {
                     className={`p-3 hover:bg-gray-100 rounded cursor-pointer transition duration-200 ${
                       event.type === "job" ? "bg-blue-100" : "bg-yellow-100"
                     }`}
-                    onClick={() =>
-                      event.type === "job"
-                        ? handleJobClick(event)
-                        : handleBidClick(event)
+                    onClick={
+                      () =>
+                        event.type === "job" ? handleJobClick(event) : null // Ensure there's a fallback for non-job events
                     }
                   >
-                    {event.title} - {event.type === "job" ? "Job" : "Bid"}
+                    {event.title} {/* Display the event title */}
                   </li>
                 ))}
             </ul>
           ) : (
-            <p className="text-center p-4">
-              No events scheduled for this date.
-            </p>
+            <p className="text-center text-gray-500">No events found.</p>
           )}
         </div>
       </div>
