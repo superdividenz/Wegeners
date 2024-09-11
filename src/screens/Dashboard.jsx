@@ -37,7 +37,7 @@ const Dashboard = () => {
     // Removed the setSelectedJob and setIsModalOpen calls
   };
 
-  const allEvents = jobs.map((item) => {
+  const allJobs = jobs.map((item) => {
     if (item.date && typeof item.date === "string") {
       const [month, day, year] = item.date.split("/");
       return {
@@ -128,33 +128,32 @@ const Dashboard = () => {
 
         <div className="bg-white shadow rounded-lg p-4">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">
-            Events on {date.toLocaleDateString()}
+            Jobs on {date.toLocaleDateString()}
           </h2>
-          {allEvents.filter(
-            (event) => event.start.toDateString() === date.toDateString()
+          {allJobs.filter(
+            (job) => job.start.toDateString() === date.toDateString()
           ).length > 0 ? (
             <ul className="space-y-2">
-              {allEvents
+              {allJobs
                 .filter(
-                  (event) => event.start.toDateString() === date.toDateString()
+                  (job) => job.start.toDateString() === date.toDateString()
                 )
-                .map((event) => (
+                .map((job) => (
                   <li
-                    key={event.id}
+                    key={job.id}
                     className={`p-3 hover:bg-gray-100 rounded cursor-pointer transition duration-200 ${
-                      event.type === "job" ? "bg-blue-100" : "bg-yellow-100"
+                      job.type === "job" ? "bg-blue-100" : "bg-yellow-200"
                     }`}
                     onClick={
-                      () =>
-                        event.type === "job" ? handleJobClick(event) : null // Ensure there's a fallback for non-job events
+                      () => (job.type === "job" ? handleJobClick(job) : null) // Ensure there's a fallback for non-job jobs
                     }
                   >
-                    {event.title} {/* Display the event title */}
+                    {job.title} {/* Display the job title */}
                   </li>
                 ))}
             </ul>
           ) : (
-            <p className="text-center text-gray-500">No events found.</p>
+            <p className="text-center text-gray-500">No Jobs found.</p>
           )}
         </div>
       </div>
