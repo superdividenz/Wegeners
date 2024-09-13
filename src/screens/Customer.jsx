@@ -166,7 +166,7 @@ const AddData = () => {
 
   const addEventToCalendar = async (jobData) => {
     const db = getFirestore();
-    const eventsRef = firestoreCollection(db, "events");
+    const eventsRef = firestoreCollection(db, "jobs");
 
     try {
       console.log("Attempting to add event to calendar for job:", jobData);
@@ -276,9 +276,7 @@ const AddData = () => {
         )}
         {selectedJob && (
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-            <h3 className="font-bold text-lg text-gray-700">
-              Edit Job Details
-            </h3>
+            <h3 className="font-bold text-lg text-gray-700">Job Details</h3>
 
             <input
               {...register("name", { required: true })}

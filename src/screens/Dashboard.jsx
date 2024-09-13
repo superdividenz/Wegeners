@@ -60,9 +60,7 @@ const Dashboard = () => {
   const markJobAsCompleted = async (jobId) => {
     try {
       const jobRef = doc(db, "jobs", jobId);
-      await updateDoc(jobRef, {
-        completed: true,
-      });
+      await saveJobWithFormattedDate(jobRef, { completed: true });
       setJobs((prevJobs) =>
         prevJobs.map((job) =>
           job.id === jobId ? { ...job, completed: true } : job
@@ -77,20 +75,45 @@ const Dashboard = () => {
   // Convert job date strings to Date objects for comparison
   const jobDates = jobs
     .map((job) => {
-      if (job.date) {
-        const [month, day, year] = job.date.split("/");
-        return new Date(year, month - 1, day).toDateString();
+      const parsedDate = Date.parse(job.date);
+      if (!isNaN(parsedDate)) {
+        return new Date(parsedDate).toDateString();
       }
+      console.warn("Invalid date found:", job.date); // Log invalid dates
       return null;
     })
     .filter(Boolean);
 
+  const saveJobWithFormattedDate = async (jobRef, data) => {
+    try {
+      const formattedDate = new Date(data.date).toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+      await updateDoc(jobRef, {
+        ...data,
+        date: formattedDate,
+      });
+      console.log("Job updated successfully");
+    } catch (error) {
+      console.error("Error updating job: ", error);
+    }
+  };
+
   // Filter jobs for the selected date
+  const normalizeDate = (date) => {
+    const parsedDate = typeof date === "string" ? new Date(date) : date;
+    return new Date(
+      parsedDate.getFullYear(),
+      parsedDate.getMonth(),
+      parsedDate.getDate()
+    );
+  };
+
+  console.log("Job dates: ", jobDates);
+  console.log("Selected date: ", date.toDateString());
+
   const jobsForSelectedDate = jobs.filter((job) => {
     if (job.date) {
-      const [month, day, year] = job.date.split("/");
-      const jobDate = new Date(year, month - 1, day).toDateString();
-      return jobDate === date.toDateString();
+      const jobDate = normalizeDate(new Date(job.date));
+      return jobDate.getTime() === normalizeDate(date).getTime();
     }
     return false;
   });
