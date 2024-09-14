@@ -11,8 +11,8 @@ const JobCard = ({
   downloadedJobs,
   archivedJobs,
 }) => {
-  const isDownloaded = downloadedJobs.has(job.id);
-  const isArchived = archivedJobs.has(job.id);
+  const isDownloaded = downloadedJobs?.has(job.id) || false;
+  const isArchived = archivedJobs?.has(job.id) || false;
 
   return (
     <div
