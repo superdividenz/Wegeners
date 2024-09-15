@@ -1,1 +1,23 @@
 node_modules
+build
+# Logs
+logs
+*.log
+
+# Environment variables
+.env
+
+# Dependency directories
+bower_components
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Build directories
+dist
+out
+
+# IDE files
+.vscode/
+.idea/
