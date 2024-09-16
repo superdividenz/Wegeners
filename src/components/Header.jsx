@@ -24,6 +24,10 @@ const Header = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   const NavLinks = () => (
     <>
       {user && ( // Only show Management link if user is authenticated
@@ -79,7 +83,7 @@ const Header = () => {
   );
 
   return (
-    <header className="bg-gradient-to-r from-black to-gray-800 text-white shadow-lg">
+    <header className="bg-gradient-to-r from-black to-gray-800 text-white shadow-lg sticky top-0">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -115,7 +119,7 @@ const Header = () => {
       </div>
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden">
+        <div className="md:hidden" onClick={closeMobileMenu}>
           <nav className="px-2 pt-2 pb-4">
             <ul className="space-y-1">
               <NavLinks />

@@ -17,9 +17,9 @@ const Management = () => {
 
   const companyInfo = {
     name: "Wegener Asphalt",
-    address: "123 Main St, Anytown, ST 12345",
-    phone: "(123) 456-7890",
-    logoUrl: "/path/to/your/logo.png",
+    address: "10200 Quail Run Dr. 63125",
+    phone: "314-300-6562",
+    logoUrl: "../img/logo+w+dropshadow-306w.webp",
   };
 
   const fetchJobs = useCallback(async () => {
