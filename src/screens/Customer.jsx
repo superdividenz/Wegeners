@@ -23,8 +23,8 @@ const AddData = () => {
   const [searchname, setSearchLastName] = useState("");
   const [matchingJobs, setMatchingJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
-  const modalRef = useRef(null); // Create a ref for the modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const modalRef = useRef(null);
 
   const handleSearch = async (e) => {
     const input = e.target.value;
@@ -230,6 +230,26 @@ const AddData = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedJob) return;
+
+    if (window.confirm("Are you sure you want to delete this job?")) {
+      const db = getFirestore();
+      const jobDocRef = doc(db, "jobs", selectedJob.id);
+
+      try {
+        await deleteDoc(jobDocRef);
+        alert("Job deleted successfully");
+        reset();
+        setSelectedJob(null);
+        setMatchingJobs([]);
+      } catch (error) {
+        console.error("Error deleting job: ", error);
+        alert("Error deleting job. Please try again.");
+      }
+    }
+  };
+
   const handleClickOutside = (event) => {
     // Check if the click is outside the modal
     if (modalRef.current && !modalRef.current.contains(event.target)) {
@@ -277,7 +297,6 @@ const AddData = () => {
         {selectedJob && (
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
             <h3 className="font-bold text-lg text-gray-700">Job Details</h3>
-
             <input
               {...register("name", { required: true })}
               placeholder="Name"
@@ -300,13 +319,13 @@ const AddData = () => {
             />
             <input
               {...register("date", { required: true })}
-              type="text"
+              type="date"
               placeholder="Date"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               {...register("price", { required: true })}
-              type="Price"
+              type="text"
               placeholder="Price"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -315,12 +334,21 @@ const AddData = () => {
               placeholder="Info"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button
-              type="submit"
-              className="bg-green-500 text-white px-4 py-3 rounded-md hover:bg-green-600 transition duration-200 w-full"
-            >
-              Update
-            </button>
+            <div className="flex space-x-4">
+              <button
+                type="submit"
+                className="bg-green-500 text-white px-4 py-3 rounded-md hover:bg-green-600 transition duration-200 flex-grow"
+              >
+                Update Job
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="bg-red-500 text-white px-4 py-3 rounded-md hover:bg-red-600 transition duration-200"
+              >
+                Delete Job
+              </button>
+            </div>
           </form>
         )}
         <div className="mt-6">

@@ -112,8 +112,9 @@ const Dashboard = () => {
 
   const jobsForSelectedDate = jobs.filter((job) => {
     if (job.date) {
-      const jobDate = normalizeDate(new Date(job.date));
-      return jobDate.getTime() === normalizeDate(date).getTime();
+      const jobDate = normalizeDate(job.date);
+      const selectedDate = normalizeDate(date);
+      return jobDate.getTime() === selectedDate.getTime();
     }
     return false;
   });
