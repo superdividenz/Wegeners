@@ -94,52 +94,69 @@ const AddData = () => {
       header: true,
       complete: async (results) => {
         console.log("Parsed CSV data:", results.data);
+
         const db = getFirestore();
         const jobsRef = collection(db, "jobs");
 
-        // Get all existing jobs
-        const existingJobsSnapshot = await getDocs(jobsRef);
-        const existingJobs = new Map(
-          existingJobsSnapshot.docs.map((doc) => [
-            doc.data().name,
-            { id: doc.id, ...doc.data() },
-          ])
-        );
+        try {
+          // Get all existing jobs from Firestore
+          const existingJobsSnapshot = await getDocs(jobsRef);
+          const existingJobs = new Map(
+            existingJobsSnapshot.docs.map((doc) => [
+              doc.data().name,
+              { id: doc.id, ...doc.data() },
+            ])
+          );
 
-        for (const row of results.data) {
-          try {
+          // Process each row in the parsed CSV data
+          const updateOrAddJobsPromises = results.data.map(async (row) => {
             const existingJob = existingJobs.get(row.name);
-
             if (existingJob) {
               // Update existing job
               const docRef = doc(db, "jobs", existingJob.id);
-              await updateDoc(docRef, { ...row, id: existingJob.id });
+              await updateDoc(docRef, {
+                date: row.date,
+                phone: row.phone,
+                address: row.address,
+                email: row.email,
+                info: row.info,
+                price: row.price,
+              });
               existingJobs.set(row.name, { ...row, id: existingJob.id });
             } else {
               // Add new job
               const docId = uuidv4();
               const docRef = doc(db, "jobs", docId);
-              await setDoc(docRef, { ...row, id: docId });
+              await setDoc(docRef, {
+                date: row.date,
+                name: row.name,
+                phone: row.phone,
+                address: row.address,
+                email: row.email,
+                info: row.info,
+                price: row.price,
+                id: docId,
+              });
               existingJobs.set(row.name, { ...row, id: docId });
             }
-          } catch (error) {
-            console.error(
-              "Error processing job from CSV:",
-              error.message,
-              error.stack
-            );
-          }
-        }
+          });
 
-        // Remove jobs that are not in the CSV
-        for (const [name, job] of existingJobs) {
-          if (!results.data.some((row) => row.name === name)) {
-            await deleteDoc(doc(db, "jobs", job.id));
-          }
-        }
+          // Wait for all updates/additions to complete
+          await Promise.all(updateOrAddJobsPromises);
 
-        alert("CSV data processed successfully");
-        setMatchingJobs([]);
+          // Remove jobs that are not present in the CSV
+          const removeJobsPromises = [];
+          for (const [name, job] of existingJobs) {
+            if (!results.data.some((row) => row.name === name)) {
+              removeJobsPromises.push(deleteDoc(doc(db, "jobs", job.id)));
+            }
+          }
+          await Promise.all(removeJobsPromises);
+
+          alert("CSV data processed successfully");
+        } catch (error) {
+          console.error("Error processing jobs:", error.message, error.stack);
+        }
       },
       error: (error) => {
         console.error("Error parsing CSV: ", error);

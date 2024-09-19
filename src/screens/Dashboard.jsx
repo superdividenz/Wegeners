@@ -1,16 +1,26 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import Modal from "./Addon/Modal";
+import { FaMapMarkerAlt } from "react-icons/fa";
+
+// CSS class for highlighted dates
+const highlightClass = `
+  .highlight {
+    background-color: #ffeb3b;
+    border-radius: 50%;
+  }
+`;
 
 const Dashboard = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
-  const [selectedJob, setSelectedJob] = useState(null); // State for selected job
-  const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -20,7 +30,6 @@ const Dashboard = () => {
       const jobList = jobSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-        type: "job", // Explicitly set the type
       }));
       setJobs(jobList);
     } catch (error) {
@@ -36,182 +45,164 @@ const Dashboard = () => {
   }, [fetchJobs]);
 
   const handleJobClick = (job) => {
-    setSelectedJob(job); // Set the selected job
-    setIsModalOpen(true); // Open the modal
+    setSelectedJob(job);
+    setIsModalOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false); // Close the modal
-    setSelectedJob(null); // Clear selected job
+  const openInGoogleMaps = (address) => {
+    const encodedAddress = encodeURIComponent(address);
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`,
+      "_blank"
+    );
   };
 
-  const allJobs = jobs.map((item) => {
-    if (item.date && typeof item.date === "string") {
-      const [month, day, year] = item.date.split("/");
-      return {
-        id: item.id,
-        title: item.name,
-        start: new Date(year, month - 1, day),
-        end: new Date(year, month - 1, day),
-        type: item.type || (item.hasOwnProperty("completed") ? "job" : "job"), // Ensure this is correct
-      };
-    } else {
-      return {
-        id: item.id,
-        title: item.name,
-        start: new Date(), // Use current date or some default
-        end: new Date(),
-        type: item.type || "job", // Ensure this is correct
-      };
+  const markJobAsCompleted = async (jobId) => {
+    try {
+      const jobRef = doc(db, "jobs", jobId);
+      await updateDoc(jobRef, {
+        completed: true,
+      });
+      setJobs((prevJobs) =>
+        prevJobs.map((job) =>
+          job.id === jobId ? { ...job, completed: true } : job
+        )
+      );
+      setSelectedJob((prevJob) => ({ ...prevJob, completed: true }));
+    } catch (error) {
+      console.error("Error marking job as completed: ", error);
     }
+  };
+
+  // Convert job date strings to Date objects for comparison
+  const jobDates = jobs
+    .map((job) => {
+      if (job.date) {
+        const [month, day, year] = job.date.split("/");
+        return new Date(year, month - 1, day).toDateString();
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  // Filter jobs for the selected date
+  const jobsForSelectedDate = jobs.filter((job) => {
+    if (job.date) {
+      const [month, day, year] = job.date.split("/");
+      const jobDate = new Date(year, month - 1, day).toDateString();
+      return jobDate === date.toDateString();
+    }
+    return false;
   });
 
   if (loading) {
-    return <div className="text-center mt-8 p-4">Loading...</div>;
+    return <div className="text-center mt-8">Loading...</div>;
   }
 
   if (error) {
-    return <div className="text-center mt-8 p-4 text-red-500">{error}</div>;
+    return <div className="text-center mt-8 text-red-500">{error}</div>;
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <style>{`
-        .highlight {
-          background-color: #ffeb3b;
-          border-radius: 50%;
-        }
-        .react-calendar {
-          width: 100%;
-          max-width: 100%;
-          background: white;
-          border: 1px solid #a0a096;
-          font-family: Arial, Helvetica, sans-serif;
-          line-height: 1.125em;
-        }
-        @media (max-width: 640px) {
-          .react-calendar__month-view__days__day {
-            padding: 0.5em 0;
-          }
-        }
-        .highlight-job {
-          background-color: #3b82f6;
-          border-radius: 50%;
-        }
-        .highlight-bid {
-          background-color: #fbbf24;
-          border-radius: 50%;
-        }
-        .highlight-both {
-          background: linear-gradient(to right, #3b82f6 50%, #fbbf24 50%);
-          border-radius: 50%;
-        }
-      `}</style>
+    <div className="container mx-auto px-4 py-6 sm:py-8">
+      <style>{highlightClass}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white shadow rounded-lg p-4">
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">Calendar</h2>
           <Calendar
             onChange={setDate}
             value={date}
             tileClassName={({ date, view }) => {
               const dateString = date.toDateString();
-              const hasJob = jobs.some((job) => {
-                if (job.date && typeof job.date === "string") {
-                  const [month, day, year] = job.date.split("/");
-                  return (
-                    new Date(year, month - 1, day).toDateString() === dateString
-                  );
-                }
-                return false;
-              });
-              if (hasJob) return "highlight highlight-job";
-              return null;
+              return jobDates.includes(dateString) ? "highlight" : null;
             }}
-            className="react-calendar"
+            className="react-calendar w-full"
           />
         </div>
 
-        <div className="bg-white shadow rounded-lg p-4">
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">
             Jobs on {date.toLocaleDateString()}
           </h2>
-          {allJobs.filter(
-            (job) => job.start.toDateString() === date.toDateString()
-          ).length > 0 ? (
+          {jobsForSelectedDate.length > 0 ? (
             <ul className="space-y-2">
-              {allJobs
-                .filter(
-                  (job) => job.start.toDateString() === date.toDateString()
-                )
-                .map((job) => (
-                  <li
-                    key={job.id}
-                    className={`p-3 hover:bg-gray-100 rounded cursor-pointer transition duration-200 ${
-                      job.type === "job" ? "bg-blue-100" : "bg-yellow-200"
-                    }`}
-                    onClick={() => handleJobClick(job)} // Updated to use handleJobClick
-                  >
-                    {job.title} {/* Display the job title */}
-                  </li>
-                ))}
+              {jobsForSelectedDate.map((job) => (
+                <li
+                  key={job.id}
+                  className="p-2 hover:bg-gray-100 rounded cursor-pointer transition duration-200"
+                  onClick={() => handleJobClick(job)}
+                >
+                  {job.date || "N/A"} - {job.address || "N/A"}
+                </li>
+              ))}
             </ul>
           ) : (
-            <p className="text-center text-gray-500">No Jobs found.</p>
+            <p>No jobs scheduled for this date.</p>
           )}
         </div>
       </div>
-
-      {isModalOpen && ( // Render modal conditionally
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70">
-          {" "}
-          {/* Increased opacity for better contrast */}
-          <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-            {" "}
-            {/* Adjusted padding and max width */}
-            <h2 className="text-2xl font-bold text-center mb-4">
-              {selectedJob?.name}
-            </h2>{" "}
-            {/* Centered title and increased size */}
-            <p className="mb-2">
-              <strong>Name:</strong> {selectedJob?.name}
-            </p>
-            <p className="mb-2">
-              <strong>Address:</strong> {selectedJob?.address}
-            </p>
-            <p className="mb-2">
-              <strong>Date:</strong> {selectedJob?.date}
-            </p>
-            <p className="mb-2">
-              <strong>Phone:</strong> {selectedJob?.phone}
-            </p>
-            <p className="mb-2">
-              <strong>Info:</strong> {selectedJob?.info}
-            </p>
-            <p className="mb-4">
-              <strong>Price:</strong> {selectedJob?.price}
-            </p>
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                selectedJob?.address
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 underline mb-4 block text-center" // Centered link
-            >
-              View on Map
-            </a>
-            <button
-              onClick={closeModal}
-              className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-200" // Full width button with hover effect
-            >
-              Close
-            </button>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        {selectedJob && (
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md mx-auto">
+            <h2 className="text-xl sm:text-2xl font-bold mb-4">Job Details</h2>
+            <div className="space-y-2 text-sm sm:text-base">
+              <p>
+                <strong>Name:</strong> {selectedJob.name || "N/A"}
+              </p>
+              <p>
+                <strong>Date:</strong> {selectedJob.date || "N/A"}
+              </p>
+              <p>
+                <strong>Email:</strong> {selectedJob.email || "N/A"}
+              </p>
+              <p>
+                <strong>Phone:</strong> {selectedJob.phone || "N/A"}
+              </p>
+              <p>
+                <strong>Address:</strong> {selectedJob.address || "N/A"}
+              </p>
+              {selectedJob.address && (
+                <button
+                  onClick={() => openInGoogleMaps(selectedJob.address)}
+                  className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm transition duration-200"
+                >
+                  <FaMapMarkerAlt className="mr-2" />
+                  View in Google Maps
+                </button>
+              )}
+              <p>
+                <strong>Info:</strong> {selectedJob.info || "N/A"}
+              </p>
+              <p>
+                <strong>Price:</strong> {selectedJob.price || "N/A"}
+              </p>
+              <p>
+                <strong>Status:</strong>{" "}
+                {selectedJob.completed ? "Completed" : "Pending"}
+              </p>
+            </div>
+            <div className="mt-6 flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+              >
+                Close
+              </button>
+              {!selectedJob.completed && (
+                <button
+                  onClick={() => markJobAsCompleted(selectedJob.id)}
+                  className="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
+                >
+                  Mark as Completed
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 };

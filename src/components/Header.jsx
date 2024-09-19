@@ -1,6 +1,6 @@
 // Header.jsx
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
 import { auth } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -30,34 +30,46 @@ const Header = () => {
 
   const NavLinks = () => (
     <>
-      {user && ( // Only show Management link if user is authenticated
+      {user && (
         <li>
-          <Link
+          <NavLink
             to="/management"
-            className="inline-block hover:text-blue-200 hover-scale"
+            className={({ isActive }) =>
+              `inline-block hover:text-blue-200 hover-scale ${
+                isActive ? "text-yellow-400" : ""
+              }`
+            }
           >
             Management
-          </Link>
+          </NavLink>
         </li>
       )}
       {user && (
         <li>
-          <Link
+          <NavLink
             to="/dashboard"
-            className="inline-block hover:text-blue-200 hover-scale"
+            className={({ isActive }) =>
+              `inline-block hover:text-blue-200 hover-scale ${
+                isActive ? "text-yellow-400" : ""
+              }`
+            }
           >
             Dashboard
-          </Link>
+          </NavLink>
         </li>
       )}
       {user && (
         <li>
-          <Link
+          <NavLink
             to="/customer"
-            className="inline-block hover:text-blue-200 hover-scale"
+            className={({ isActive }) =>
+              `inline-block hover:text-blue-200 hover-scale ${
+                isActive ? "text-yellow-400" : ""
+              }`
+            }
           >
             Customer
-          </Link>
+          </NavLink>
         </li>
       )}
       {user ? (
@@ -71,12 +83,16 @@ const Header = () => {
         </li>
       ) : (
         <li>
-          <Link
+          <NavLink
             to="/login"
-            className="inline-block hover:text-blue-200 hover-scale"
+            className={({ isActive }) =>
+              `inline-block hover:text-blue-200 hover-scale ${
+                isActive ? "text-yellow-400" : ""
+              }`
+            }
           >
             Login
-          </Link>
+          </NavLink>
         </li>
       )}
     </>
