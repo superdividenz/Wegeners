@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
-import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  getDoc,
+} from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "./Addon/Modal";
 import { FaMapMarkerAlt } from "react-icons/fa";
-
-// CSS class for highlighted dates
-const highlightClass = `
-  .highlight {
-    background-color: #ffeb3b;
-    border-radius: 50%;
-  }
-`;
 
 const Dashboard = () => {
   const [jobs, setJobs] = useState([]);
@@ -21,6 +19,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
+  const [blockedDays, setBlockedDays] = useState([]);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -40,9 +39,32 @@ const Dashboard = () => {
     }
   }, []);
 
+  const fetchBlockedDays = useCallback(async () => {
+    try {
+      const blockedDaysRef = doc(db, "blockedDays", "schedule");
+      const blockedDaysDoc = await getDoc(blockedDaysRef);
+      if (blockedDaysDoc.exists()) {
+        setBlockedDays(blockedDaysDoc.data().dates || []);
+      }
+    } catch (error) {
+      console.error("Error fetching blocked days: ", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchJobs();
-  }, [fetchJobs]);
+    fetchBlockedDays();
+  }, [fetchJobs, fetchBlockedDays]);
+
+  const toggleBlockDay = (selectedDate) => {
+    const dateString = selectedDate.toDateString();
+    setBlockedDays(
+      (prev) =>
+        prev.includes(dateString)
+          ? prev.filter((day) => day !== dateString) // Unblock if already blocked
+          : [...prev, dateString] // Block the day
+    );
+  };
 
   const handleJobClick = (job) => {
     setSelectedJob(job);
@@ -74,7 +96,6 @@ const Dashboard = () => {
     }
   };
 
-  // Convert job date strings to Date objects for comparison
   const jobDates = jobs
     .map((job) => {
       if (job.date) {
@@ -85,7 +106,6 @@ const Dashboard = () => {
     })
     .filter(Boolean);
 
-  // Filter jobs for the selected date
   const jobsForSelectedDate = jobs.filter((job) => {
     if (job.date) {
       const [month, day, year] = job.date.split("/");
@@ -105,20 +125,28 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8">
-      <style>{highlightClass}</style>
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">Calendar</h2>
+          <h2 className="text-center text-lg sm:text-xl font-semibold mb-4">
+            Calendar
+          </h2>
           <Calendar
             onChange={setDate}
             value={date}
             tileClassName={({ date, view }) => {
               const dateString = date.toDateString();
-              return jobDates.includes(dateString) ? "highlight" : null;
+              if (jobDates.includes(dateString)) {
+                return "highlight";
+              }
+              if (blockedDays.includes(dateString)) {
+                return "blocked";
+              }
+              return null;
             }}
+            onClickDay={toggleBlockDay}
             className="react-calendar w-full"
           />
         </div>
@@ -147,7 +175,9 @@ const Dashboard = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {selectedJob && (
           <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md mx-auto">
-            <h2 className="text-xl sm:text-2xl font-bold mb-4">Job Details</h2>
+            <h2 className="text-center text-xl sm:text-2xl font-bold mb-4">
+              Job Details
+            </h2>
             <div className="space-y-2 text-sm sm:text-base">
               <p>
                 <strong>Name:</strong> {selectedJob.name || "N/A"}
