@@ -64,6 +64,13 @@ const Dashboard = () => {
   const toggleBlockDay = async (selectedDate) => {
     const dateString = selectedDate.toDateString();
     const isCurrentlyBlocked = blockedDays.includes(dateString);
+
+    // Check if there are jobs on this date
+    if (!isCurrentlyBlocked && hasJobsOnDate(selectedDate)) {
+      console.log("Cannot block a date with scheduled jobs.");
+      return; // Exit the function without blocking the date
+    }
+
     const updatedBlockedDays = isCurrentlyBlocked
       ? blockedDays.filter((day) => day !== dateString)
       : [...blockedDays, dateString];
@@ -117,14 +124,24 @@ const Dashboard = () => {
     return false;
   });
 
+  // already jobs?
+  const hasJobsOnDate = (date) => {
+    const dateString = date.toDateString();
+    return jobs.some((job) => {
+      const [month, day, year] = job.date.split("/");
+      const jobDate = new Date(year, month - 1, day).toDateString();
+      return jobDate === dateString;
+    });
+  };
+
   // Highlight dates with jobs and blocked days
   const tileClassName = ({ date }) => {
     const dateString = date.toDateString();
-    if (blockedDays.includes(dateString)) {
-      return "blocked"; // CSS class for blocked days
-    }
     if (jobDates.includes(dateString)) {
-      return "highlight"; // CSS class for days with jobs
+      return "highlight job-day"; // Add 'job-day' class
+    }
+    if (blockedDays.includes(dateString)) {
+      return "blocked";
     }
     return null;
   };

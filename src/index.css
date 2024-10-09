@@ -22,4 +22,12 @@
     background-color: #e57373;
     color: white;
   }
+  .react-calendar .job-day {
+    background-color: #ffeb3b;
+    color: #e57373;
+  }
+  
+  .react-calendar .job-day:hover {
+    background-color: #cce6ff;
+  }
   
