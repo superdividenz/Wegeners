@@ -63,16 +63,19 @@ const Dashboard = () => {
   // Toggle block/unblock days and persist to Firebase
   const toggleBlockDay = async (selectedDate) => {
     const dateString = selectedDate.toDateString();
-    const updatedBlockedDays = blockedDays.includes(dateString)
+    const isCurrentlyBlocked = blockedDays.includes(dateString);
+    const updatedBlockedDays = isCurrentlyBlocked
       ? blockedDays.filter((day) => day !== dateString)
       : [...blockedDays, dateString];
+
     setBlockedDays(updatedBlockedDays);
 
-    // Save updated blocked days to Firebase
     try {
       const blockedDaysRef = doc(db, "blockedDays", "schedule");
       await updateDoc(blockedDaysRef, { dates: updatedBlockedDays });
-      console.log("Blocked days updated in Firebase.");
+      console.log(
+        `Date ${dateString} ${isCurrentlyBlocked ? "unblocked" : "blocked"}.`
+      );
     } catch (error) {
       console.error("Error updating blocked days in Firebase:", error);
     }
@@ -117,19 +120,18 @@ const Dashboard = () => {
   // Highlight dates with jobs and blocked days
   const tileClassName = ({ date }) => {
     const dateString = date.toDateString();
-    if (jobDates.includes(dateString)) {
-      return "highlight"; // Highlight days with jobs
-    }
     if (blockedDays.includes(dateString)) {
-      return "blocked"; // Highlight blocked days
+      return "blocked"; // CSS class for blocked days
+    }
+    if (jobDates.includes(dateString)) {
+      return "highlight"; // CSS class for days with jobs
     }
     return null;
   };
 
   // Disable blocked days in the calendar
   const tileDisabled = ({ date }) => {
-    const dateString = date.toDateString();
-    return blockedDays.includes(dateString); // Disable blocked days
+    return false; // Allow clicking on all days, including blocked ones
   };
 
   // Open address in Google Maps
