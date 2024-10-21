@@ -13,3 +13,13 @@
   .hover-scale:hover {
     transform: scale(1.15);
   }
+  .react-calendar .highlight {
+    background-color: #ffeb3b;
+    color: black;
+  }
+  
+  .react-calendar .blocked {
+    background-color: #e57373;
+    color: white;
+  }
+  

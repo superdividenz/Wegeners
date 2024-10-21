@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import {
   getFirestore,
@@ -9,31 +9,14 @@ import {
   updateDoc,
   doc,
   setDoc,
-  writeBatch,
+  deleteDoc,
+  addDoc,
+  collection as firestoreCollection,
+  // eslint-disable-next-line no-unused-vars
+  getDoc,
 } from "firebase/firestore";
 import Papa from "papaparse";
 import { v4 as uuidv4 } from "uuid";
-
-// Move handleDownload function here, outside of AddData component
-const handleDownload = async () => {
-  const db = getFirestore();
-  const jobsRef = collection(db, "jobs");
-  const querySnapshot = await getDocs(jobsRef);
-  const allJobs = querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-  const csv = Papa.unparse(allJobs);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", "all_jobs_data.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
 
 const AddData = () => {
   const { register, handleSubmit, setValue, reset } = useForm();
@@ -41,6 +24,7 @@ const AddData = () => {
   const [matchingJobs, setMatchingJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false); // State for modal visibility
+  const modalRef = useRef(null); // Create a ref for the modal
 
   const handleSearch = async (e) => {
     const input = e.target.value;
@@ -76,6 +60,19 @@ const AddData = () => {
     if (!selectedJob) return;
 
     const db = getFirestore();
+    const jobsRef = collection(db, "jobs");
+    const q = query(
+      jobsRef,
+      where("name", "==", data.name),
+      where("id", "!=", selectedJob.id)
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      alert("A job with this name already exists.");
+      return;
+    }
+
     const jobDocRef = doc(db, "jobs", selectedJob.id);
 
     try {
@@ -97,99 +94,174 @@ const AddData = () => {
       header: true,
       complete: async (results) => {
         console.log("Parsed CSV data:", results.data);
+
         const db = getFirestore();
-        const batch = writeBatch(db);
-        let processedRows = 0;
-        let skippedRows = 0;
-
-        for (const row of results.data) {
-          // Skip empty rows
-          if (Object.keys(row).length === 0) {
-            skippedRows++;
-            continue;
-          }
-
-          try {
-            const docId = row.id || uuidv4();
-            const docRef = doc(db, "jobs", docId);
-
-            // Remove empty fields and trim whitespace
-            const cleanedRow = Object.fromEntries(
-              Object.entries(row)
-                .filter(([key, value]) => value.trim() !== "")
-                .map(([key, value]) => [key, value.trim()])
-            );
-
-            // Add the id field back if it was removed
-            cleanedRow.id = docId;
-
-            // Only add the row if there's at least one non-empty field (excluding id)
-            if (Object.keys(cleanedRow).length > 1) {
-              batch.set(docRef, cleanedRow);
-              processedRows++;
-            } else {
-              skippedRows++;
-            }
-          } catch (error) {
-            console.error("Error processing row:", row, error);
-          }
-        }
+        const jobsRef = collection(db, "jobs");
 
         try {
-          await batch.commit();
-          alert(
-            `CSV data uploaded successfully. Processed ${processedRows} rows. Skipped ${skippedRows} rows.`
+          // Get all existing jobs from Firestore
+          const existingJobsSnapshot = await getDocs(jobsRef);
+          const existingJobs = new Map(
+            existingJobsSnapshot.docs.map((doc) => [
+              doc.data().name,
+              { id: doc.id, ...doc.data() },
+            ])
           );
-          setMatchingJobs([]);
+
+          // Process each row in the parsed CSV data
+          const updateOrAddJobsPromises = results.data.map(async (row) => {
+            const existingJob = existingJobs.get(row.name);
+            if (existingJob) {
+              // Update existing job
+              const docRef = doc(db, "jobs", existingJob.id);
+              await updateDoc(docRef, {
+                date: row.date,
+                phone: row.phone,
+                address: row.address,
+                email: row.email,
+                info: row.info,
+                price: row.price,
+              });
+              existingJobs.set(row.name, { ...row, id: existingJob.id });
+            } else {
+              // Add new job
+              const docId = uuidv4();
+              const docRef = doc(db, "jobs", docId);
+              await setDoc(docRef, {
+                date: row.date,
+                name: row.name,
+                phone: row.phone,
+                address: row.address,
+                email: row.email,
+                info: row.info,
+                price: row.price,
+                id: docId,
+              });
+              existingJobs.set(row.name, { ...row, id: docId });
+            }
+          });
+
+          // Wait for all updates/additions to complete
+          await Promise.all(updateOrAddJobsPromises);
+
+          // Remove jobs that are not present in the CSV
+          const removeJobsPromises = [];
+          for (const [name, job] of existingJobs) {
+            if (!results.data.some((row) => row.name === name)) {
+              removeJobsPromises.push(deleteDoc(doc(db, "jobs", job.id)));
+            }
+          }
+          await Promise.all(removeJobsPromises);
+
+          alert("CSV data processed successfully");
         } catch (error) {
-          console.error("Error committing batch:", error);
-          alert(
-            "Error uploading CSV data. Please check the console for details."
-          );
+          console.error("Error processing jobs:", error.message, error.stack);
         }
       },
       error: (error) => {
         console.error("Error parsing CSV: ", error);
-        alert("Error parsing CSV file. Please check the file format.");
       },
     });
   };
 
-  const handleDownloadAndDelete = async () => {
-    await handleDownload();
+  const handleDownload = async () => {
     const db = getFirestore();
     const jobsRef = collection(db, "jobs");
     const querySnapshot = await getDocs(jobsRef);
+    const allJobs = querySnapshot.docs.map((doc) => doc.data());
 
-    // Delete all documents
-    const batch = writeBatch(db);
-    querySnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
+    const csv = Papa.unparse(allJobs);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "all_jobs_data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-    await batch.commit();
-    console.log("All jobs deleted");
+  const addEventToCalendar = async (jobData) => {
+    const db = getFirestore();
+    const eventsRef = firestoreCollection(db, "jobs");
+
+    try {
+      console.log("Attempting to add event to calendar for job:", jobData);
+
+      // Check if an event with this jobId already exists
+      const q = query(eventsRef, where("jobId", "==", jobData.id));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        // No existing event found, so add a new one
+        const eventData = {
+          title: jobData.name,
+          start: new Date(jobData.date).toISOString(),
+          end: new Date(jobData.date).toISOString(),
+          description: jobData.info || "",
+          jobId: jobData.id,
+        };
+
+        const docRef = await addDoc(eventsRef, eventData);
+        console.log("Event added to calendar successfully with ID:", docRef.id);
+        console.log("Event data:", eventData);
+      } else {
+        console.log("Event already exists in calendar for job:", jobData.id);
+      }
+    } catch (error) {
+      console.error("Error adding event to calendar: ", error);
+      alert(
+        "Error adding event to calendar. Please check console for details."
+      );
+    }
   };
 
   const handleAddJob = async (data) => {
     const db = getFirestore();
-    const docId = uuidv4(); // Generate a unique ID for the new job
+    const jobsRef = collection(db, "jobs");
+    const q = query(jobsRef, where("name", "==", data.name));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      alert("A job with this name already exists.");
+      return;
+    }
+
+    const docId = uuidv4();
     const docRef = doc(db, "jobs", docId);
 
     try {
-      await setDoc(docRef, { ...data, id: docId }); // Store ID in the document
-      alert("Job added successfully");
-      setIsModalOpen(false); // Close the modal after adding the job
-      reset(); // Reset the form fields
+      const jobData = { ...data, id: docId };
+      await setDoc(docRef, jobData);
+      console.log("Job added successfully:", jobData);
+
+      // Add the job to the calendar
+      await addEventToCalendar(jobData);
+
+      alert("Job added successfully and event added to calendar");
+      setIsModalOpen(false);
+      reset();
     } catch (error) {
       console.error("Error adding job: ", error);
+      alert("Error adding job. Please check console for details.");
     }
   };
+
   const handleClickOutside = (event) => {
-    if (event.target.classList.contains("modal-overlay")) {
-      setIsModalOpen(false);
+    // Check if the click is outside the modal
+    if (modalRef.current && !modalRef.current.contains(event.target)) {
+      setIsModalOpen(false); // Close the modal
     }
   };
+
+  useEffect(() => {
+    // Add event listener for clicks
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Clean up the event listener on component unmount
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -221,9 +293,7 @@ const AddData = () => {
         )}
         {selectedJob && (
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-            <h3 className="font-bold text-lg text-gray-700">
-              Edit Job Details
-            </h3>
+            <h3 className="font-bold text-lg text-gray-700">Job Details</h3>
 
             <input
               {...register("name", { required: true })}
@@ -231,12 +301,12 @@ const AddData = () => {
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
-              {...register("email", { required: true })}
+              {...register("email", { required: false })}
               placeholder="Email"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
-              {...register("phone", { required: true })}
+              {...register("phone", { required: false })}
               placeholder="Phone"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -248,15 +318,17 @@ const AddData = () => {
             <input
               {...register("date", { required: true })}
               type="text"
+              placeholder="Date"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               {...register("price", { required: true })}
               type="Price"
+              placeholder="Price"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <textarea
-              {...register("info", { required: true })}
+              {...register("info", { required: false })}
               placeholder="Info"
               className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -276,10 +348,10 @@ const AddData = () => {
             className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
-            onClick={handleDownloadAndDelete}
-            className="bg-red-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-red-600 transition duration-200 w-full"
+            onClick={handleDownload}
+            className="bg-blue-500 text-white px-4 py-3 mt-4 rounded-md hover:bg-blue-600 transition duration-200 w-full"
           >
-            Download and Delete All Data
+            Download Data
           </button>
           <button
             onClick={() => setIsModalOpen(true)} // Open the modal on click
@@ -292,11 +364,11 @@ const AddData = () => {
 
       {/* Modal for adding a job manually */}
       {isModalOpen && (
-        <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay"
-          onClick={handleClickOutside}
-        >
-          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay">
+          <div
+            ref={modalRef} // Attach the ref to the modal
+            className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto"
+          >
             <h3 className="font-bold text-lg text-gray-700 mb-4">
               Add New Job
             </h3>
@@ -307,12 +379,12 @@ const AddData = () => {
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
-                {...register("email", { required: true })}
+                {...register("email", { required: false })}
                 placeholder="Email"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <input
-                {...register("phone", { required: true })}
+                {...register("phone", { required: false })}
                 placeholder="Phone"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -324,7 +396,6 @@ const AddData = () => {
               <input
                 {...register("date", { required: true })}
                 type="text"
-                placeholder="M/DD/YYYY"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
@@ -333,7 +404,7 @@ const AddData = () => {
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
-                {...register("info", { required: true })}
+                {...register("info", { required: false })}
                 placeholder="info"
                 className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               />

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+// Header.jsx
+import React, { useState } from "react";
+import { useNavigate, NavLink } from "react-router-dom";
 import { auth } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -9,19 +10,6 @@ const Header = () => {
   const [user] = useAuthState(auth);
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSticky, setIsSticky] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsSticky(window.scrollY > 0);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -36,6 +24,10 @@ const Header = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   const NavLinks = () => (
     <>
       {user && (
@@ -44,7 +36,7 @@ const Header = () => {
             to="/management"
             className={({ isActive }) =>
               `inline-block hover:text-blue-200 hover-scale ${
-                isActive ? "text-blue-400 font-bold" : ""
+                isActive ? "text-yellow-400" : ""
               }`
             }
           >
@@ -58,7 +50,7 @@ const Header = () => {
             to="/dashboard"
             className={({ isActive }) =>
               `inline-block hover:text-blue-200 hover-scale ${
-                isActive ? "text-blue-400 font-bold" : ""
+                isActive ? "text-yellow-400" : ""
               }`
             }
           >
@@ -72,7 +64,7 @@ const Header = () => {
             to="/customer"
             className={({ isActive }) =>
               `inline-block hover:text-blue-200 hover-scale ${
-                isActive ? "text-blue-400 font-bold" : ""
+                isActive ? "text-yellow-400" : ""
               }`
             }
           >
@@ -95,7 +87,7 @@ const Header = () => {
             to="/login"
             className={({ isActive }) =>
               `inline-block hover:text-blue-200 hover-scale ${
-                isActive ? "text-blue-400 font-bold" : ""
+                isActive ? "text-yellow-400" : ""
               }`
             }
           >
@@ -107,20 +99,14 @@ const Header = () => {
   );
 
   return (
-    <header
-      className={`bg-gradient-to-r from-black to-gray-800 text-white shadow-lg fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isSticky ? "py-2" : "py-3"
-      }`}
-    >
-      <div className="container mx-auto px-4">
+    <header className="bg-gradient-to-r from-black to-gray-800 text-white shadow-lg sticky top-0">
+      <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <img
               src={logo}
               alt="Wegener Sealer Logo"
-              className={`transition-all duration-300 hover:scale-110 ${
-                isSticky ? "h-10" : "h-12"
-              }`}
+              className="h-12 w-auto transition-transform duration-300 hover:scale-110"
             />
           </div>
           <nav className="hidden md:block">
@@ -149,7 +135,7 @@ const Header = () => {
       </div>
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden">
+        <div className="md:hidden" onClick={closeMobileMenu}>
           <nav className="px-2 pt-2 pb-4">
             <ul className="space-y-1">
               <NavLinks />

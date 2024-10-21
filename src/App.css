@@ -36,3 +36,13 @@
     transform: rotate(360deg);
   }
 }
+
+.react-calendar .highlight {
+  background-color: #ffeb3b;
+  color: black;
+}
+
+.react-calendar .blocked {
+  background-color: #e57373;
+  color: white;
+}
