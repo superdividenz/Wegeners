@@ -12,6 +12,14 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_MEASUREMENT_ID
 };
 
+// Check if all required config values are present
+const isConfigValid = Object.values(firebaseConfig).every(value => value !== undefined);
+
+if (!isConfigValid) {
+  console.error('Firebase configuration is incomplete. Check your .env file.');
+  throw new Error('Firebase configuration is incomplete');
+}
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 

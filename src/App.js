@@ -17,41 +17,43 @@ const App = () => {
       <AuthProvider>
         <Header />
         <Routes>
-  <Route path="/" element={<Login />} />
-  <Route path="/login" element={<Login />} /> {/* Add this line */}
-  <Route
-    path="/management"
-    element={
-      <RoleProtectedRoute requiredRole="admin">
-        <Management />
-      </RoleProtectedRoute>
-    }
-  />
-  <Route
-    path="/dashboard"
-    element={
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    }
-  />
-  <Route
-    path="/customer"
-    element={
-      <ProtectedRoute>
-        <Customer />
-      </ProtectedRoute>
-    }
-  />
-  <Route
-    path="/admin-assign-role"
-    element={
-      <RoleProtectedRoute requiredRole="admin">
-        <AdminRoleAssignment />
-      </RoleProtectedRoute>
-    }
-  />
-</Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} /> {/* Add this line */}
+          <Route
+            path="/management"
+            element={
+              <ProtectedRoute> {/* Ensure user is authenticated */}
+                <RoleProtectedRoute requiredRole="admin">
+                  <Management />
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/customer"
+            element={
+              <ProtectedRoute>
+                <Customer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-assign-role"
+            element={
+              <RoleProtectedRoute requiredRole="admin">
+                <AdminRoleAssignment />
+              </RoleProtectedRoute>
+            }
+          />
+        </Routes>
       </AuthProvider>
     </Router>
   );
