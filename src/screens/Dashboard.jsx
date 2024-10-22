@@ -6,11 +6,15 @@ import "react-calendar/dist/Calendar.css";
 import Modal from "./Addon/Modal";
 import { FaMapMarkerAlt } from "react-icons/fa";
 
-// CSS class for highlighted dates
 const highlightClass = `
   .highlight {
     background-color: #ffeb3b;
     border-radius: 50%;
+  }
+  .blocked {
+    background-color: #ff4d4d;
+    color: white;
+    text-decoration: line-through;
   }
 `;
 
@@ -21,6 +25,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
+  const [blockedDates, setBlockedDates] = useState([]);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -72,21 +77,20 @@ const Dashboard = () => {
     }
   };
 
-  // Convert job date strings to Date objects for comparison
   const jobDates = jobs
     .map((job) => {
       const parsedDate = Date.parse(job.date);
       if (!isNaN(parsedDate)) {
         return new Date(parsedDate).toDateString();
       }
-      console.warn("Invalid date found:", job.date); // Log invalid dates
+      console.warn("Invalid date found:", job.date);
       return null;
     })
     .filter(Boolean);
 
   const saveJobWithFormattedDate = async (jobRef, data) => {
     try {
-      const formattedDate = new Date(data.date).toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+      const formattedDate = new Date(data.date).toISOString().split("T")[0];
       await updateDoc(jobRef, {
         ...data,
         date: formattedDate,
@@ -97,7 +101,6 @@ const Dashboard = () => {
     }
   };
 
-  // Filter jobs for the selected date
   const normalizeDate = (date) => {
     const parsedDate = typeof date === "string" ? new Date(date) : date;
     return new Date(
@@ -107,9 +110,6 @@ const Dashboard = () => {
     );
   };
 
-  console.log("Job dates: ", jobDates);
-  console.log("Selected date: ", date.toDateString());
-
   const jobsForSelectedDate = jobs.filter((job) => {
     if (job.date) {
       const jobDate = normalizeDate(job.date);
@@ -118,6 +118,15 @@ const Dashboard = () => {
     }
     return false;
   });
+
+  const toggleBlockedDate = (date) => {
+    const dateString = date.toDateString();
+    setBlockedDates((prev) =>
+      prev.includes(dateString)
+        ? prev.filter((d) => d !== dateString)
+        : [...prev, dateString]
+    );
+  };
 
   if (loading) {
     return <div className="text-center mt-8">Loading...</div>;
@@ -145,11 +154,22 @@ const Dashboard = () => {
               value={date}
               tileClassName={({ date, view }) => {
                 const dateString = date.toDateString();
+                if (blockedDates.includes(dateString)) return "blocked";
                 return jobDates.includes(dateString) ? "highlight" : null;
+              }}
+              onClickDay={(value) => {
+                if (window.confirm("Do you want to block/unblock this date?")) {
+                  toggleBlockedDate(value);
+                } else {
+                  setDate(value);
+                }
               }}
               className="react-calendar w-full"
             />
           </div>
+          <p className="text-sm text-center text-gray-600 mt-2">
+            Tap a date to block/unblock it
+          </p>
         </div>
 
         <div className="bg-white shadow rounded-lg p-4 sm:p-6 transition-all hover:shadow-lg">
