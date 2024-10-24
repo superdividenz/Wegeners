@@ -5,16 +5,13 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "./Addon/Modal";
 import { FaMapMarkerAlt } from "react-icons/fa";
+import JobsMapModal from "./Addon/JobsMapModal";
 
+// CSS class for highlighted dates
 const highlightClass = `
   .highlight {
     background-color: #ffeb3b;
     border-radius: 50%;
-  }
-  .blocked {
-    background-color: #ff4d4d;
-    color: white;
-    text-decoration: line-through;
   }
 `;
 
@@ -25,7 +22,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
-  const [blockedDates, setBlockedDates] = useState([]);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -65,7 +62,9 @@ const Dashboard = () => {
   const markJobAsCompleted = async (jobId) => {
     try {
       const jobRef = doc(db, "jobs", jobId);
-      await saveJobWithFormattedDate(jobRef, { completed: true });
+      await updateDoc(jobRef, {
+        completed: true,
+      });
       setJobs((prevJobs) =>
         prevJobs.map((job) =>
           job.id === jobId ? { ...job, completed: true } : job
@@ -77,56 +76,26 @@ const Dashboard = () => {
     }
   };
 
+  // Convert job date strings to Date objects for comparison
   const jobDates = jobs
     .map((job) => {
-      const parsedDate = Date.parse(job.date);
-      if (!isNaN(parsedDate)) {
-        return new Date(parsedDate).toDateString();
+      if (job.date) {
+        const [month, day, year] = job.date.split("/");
+        return new Date(year, month - 1, day).toDateString();
       }
-      console.warn("Invalid date found:", job.date);
       return null;
     })
     .filter(Boolean);
 
-  const saveJobWithFormattedDate = async (jobRef, data) => {
-    try {
-      const formattedDate = new Date(data.date).toISOString().split("T")[0];
-      await updateDoc(jobRef, {
-        ...data,
-        date: formattedDate,
-      });
-      console.log("Job updated successfully");
-    } catch (error) {
-      console.error("Error updating job: ", error);
-    }
-  };
-
-  const normalizeDate = (date) => {
-    const parsedDate = typeof date === "string" ? new Date(date) : date;
-    return new Date(
-      parsedDate.getFullYear(),
-      parsedDate.getMonth(),
-      parsedDate.getDate()
-    );
-  };
-
+  // Filter jobs for the selected date
   const jobsForSelectedDate = jobs.filter((job) => {
     if (job.date) {
-      const jobDate = normalizeDate(job.date);
-      const selectedDate = normalizeDate(date);
-      return jobDate.getTime() === selectedDate.getTime();
+      const [month, day, year] = job.date.split("/");
+      const jobDate = new Date(year, month - 1, day).toDateString();
+      return jobDate === date.toDateString();
     }
     return false;
   });
-
-  const toggleBlockedDate = (date) => {
-    const dateString = date.toDateString();
-    setBlockedDates((prev) =>
-      prev.includes(dateString)
-        ? prev.filter((d) => d !== dateString)
-        : [...prev, dateString]
-    );
-  };
 
   if (loading) {
     return <div className="text-center mt-8">Loading...</div>;
@@ -139,41 +108,31 @@ const Dashboard = () => {
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8">
       <style>{highlightClass}</style>
-      <div className="flex flex-col items-center mb-2">
+      <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
+        <button
+          onClick={() => setIsMapModalOpen(true)}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-200"
+        >
+          Jobs on Map
+        </button>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6 transition-all hover:shadow-lg">
-          <h2 className="text-center text-lg sm:text-xl font-semibold mb-4">
-            Calendar
-          </h2>
-          <div className="flex justify-center">
-            <Calendar
-              onChange={setDate}
-              value={date}
-              tileClassName={({ date, view }) => {
-                const dateString = date.toDateString();
-                if (blockedDates.includes(dateString)) return "blocked";
-                return jobDates.includes(dateString) ? "highlight" : null;
-              }}
-              onClickDay={(value) => {
-                if (window.confirm("Do you want to block/unblock this date?")) {
-                  toggleBlockedDate(value);
-                } else {
-                  setDate(value);
-                }
-              }}
-              className="react-calendar w-full"
-            />
-          </div>
-          <p className="text-sm text-center text-gray-600 mt-2">
-            Tap a date to block/unblock it
-          </p>
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Calendar</h2>
+          <Calendar
+            onChange={setDate}
+            value={date}
+            tileClassName={({ date, view }) => {
+              const dateString = date.toDateString();
+              return jobDates.includes(dateString) ? "highlight" : null;
+            }}
+            className="react-calendar w-full"
+          />
         </div>
 
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6 transition-all hover:shadow-lg">
-          <h2 className="text-center text-lg sm:text-xl font-semibold mb-4">
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">
             Jobs on {date.toLocaleDateString()}
           </h2>
           {jobsForSelectedDate.length > 0 ? (
@@ -181,7 +140,7 @@ const Dashboard = () => {
               {jobsForSelectedDate.map((job) => (
                 <li
                   key={job.id}
-                  className="p-2 hover:bg-gray-100 rounded cursor-pointer transition duration-200 ease-in-out"
+                  className="p-2 hover:bg-gray-100 rounded cursor-pointer transition duration-200"
                   onClick={() => handleJobClick(job)}
                 >
                   {job.date || "N/A"} - {job.address || "N/A"}
@@ -193,7 +152,6 @@ const Dashboard = () => {
           )}
         </div>
       </div>
-
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         {selectedJob && (
           <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md mx-auto">
@@ -217,7 +175,7 @@ const Dashboard = () => {
               {selectedJob.address && (
                 <button
                   onClick={() => openInGoogleMaps(selectedJob.address)}
-                  className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm transition duration-200 ease-in-out"
+                  className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm transition duration-200"
                 >
                   <FaMapMarkerAlt className="mr-2" />
                   View in Google Maps
@@ -237,14 +195,14 @@ const Dashboard = () => {
             <div className="mt-6 flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200 ease-in-out"
+                className="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
               >
                 Close
               </button>
               {!selectedJob.completed && (
                 <button
                   onClick={() => markJobAsCompleted(selectedJob.id)}
-                  className="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200 ease-in-out"
+                  className="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
                 >
                   Mark as Completed
                 </button>
@@ -253,6 +211,13 @@ const Dashboard = () => {
           </div>
         )}
       </Modal>
+      {isMapModalOpen && (
+        <JobsMapModal
+          jobs={jobs}
+          apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}
+          onClose={() => setIsMapModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
