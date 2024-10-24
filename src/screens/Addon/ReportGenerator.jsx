@@ -3,110 +3,99 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import ReportPDF from "./ReportPDF";
 
 const ReportGenerator = ({ jobs }) => {
-  const [selectedReport, setSelectedReport] = useState("");
-  const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [reportType, setReportType] = useState("monthly");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
 
   const generateReportData = () => {
-    if (!selectedReport || !dateRange.start || !dateRange.end) {
-      return null;
+    if (reportType === "monthly" && !selectedMonth) return null;
+    if (reportType === "annual" && !selectedYear) return null;
+
+    let startDate, endDate, filteredJobs;
+
+    if (reportType === "monthly") {
+      const [year, month] = selectedMonth.split("-");
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month, 0);
+    } else {
+      startDate = new Date(selectedYear, 0, 1);
+      endDate = new Date(selectedYear, 11, 31);
     }
 
-    const filteredJobs = jobs.filter(
-      (job) =>
-        new Date(job.date) >= new Date(dateRange.start) &&
-        new Date(job.date) <= new Date(dateRange.end)
+    filteredJobs = jobs.filter((job) => {
+      const jobDate = new Date(job.date);
+      return jobDate >= startDate && jobDate <= endDate;
+    });
+
+    const totalRevenue = filteredJobs.reduce(
+      (sum, job) => sum + parseFloat(job.price || 0),
+      0
     );
+    const completedJobs = filteredJobs.filter((job) => job.completed).length;
+    const completionRate =
+      filteredJobs.length > 0 ? (completedJobs / filteredJobs.length) * 100 : 0;
 
-    const generateMonthlyRevenueReport = (filteredJobs) => {
-      const monthlyRevenue = filteredJobs.reduce((acc, job) => {
-        const month = new Date(job.date).getMonth();
-        acc[month] = (acc[month] || 0) + parseFloat(job.price || 0);
-        return acc;
-      }, {});
-      return {
-        type: "Monthly Revenue",
-        data: monthlyRevenue,
-        jobDetails: filteredJobs.map((job) => ({
-          date: job.date,
-          description: job.description,
-          price: job.price,
-          completed: job.completed ? "Yes" : "No",
-        })),
-      };
+    return {
+      type: reportType === "monthly" ? "Monthly Report" : "Annual Report",
+      data: {
+        month: reportType === "monthly" ? startDate.toLocaleString("default", { month: "long" }) : null,
+        year: reportType === "monthly" ? startDate.getFullYear() : selectedYear,
+        totalJobs: filteredJobs.length,
+        completedJobs: completedJobs,
+        totalRevenue: totalRevenue,
+        completionRate: completionRate,
+      },
+      jobDetails: filteredJobs.map((job) => ({
+        date: job.date,
+        description: job.description,
+        price: job.price,
+        completed: job.completed ? "Yes" : "No",
+        client: job.client || "N/A",
+        location: job.location || "N/A",
+      })),
     };
-
-    const generateJobCompletionRateReport = (filteredJobs) => {
-      const totalJobs = filteredJobs.length;
-      const completedJobs = filteredJobs.filter((job) => job.completed).length;
-      const completionRate =
-        totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0;
-      return {
-        type: "Job Completion Rate",
-        data: {
-          total: totalJobs,
-          completed: completedJobs,
-          rate: Number(completionRate.toFixed(2)),
-        },
-        jobDetails: filteredJobs.map((job) => ({
-          date: job.date,
-          description: job.description,
-          price: job.price,
-          completed: job.completed ? "Yes" : "No",
-        })),
-      };
-    };
-
-    switch (selectedReport) {
-      case "monthly-revenue":
-        return generateMonthlyRevenueReport(filteredJobs);
-      case "job-completion-rate":
-        return generateJobCompletionRateReport(filteredJobs);
-      default:
-        return null;
-    }
   };
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4">Generate Reports</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4">Generate Report</h2>
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4">
         <select
-          value={selectedReport}
-          onChange={(e) => setSelectedReport(e.target.value)}
+          value={reportType}
+          onChange={(e) => setReportType(e.target.value)}
           className="border rounded px-2 py-1 w-full sm:w-auto"
         >
-          <option value="">Select a report</option>
-          <option value="monthly-revenue">Monthly Revenue</option>
-          <option value="job-completion-rate">Job Completion Rate</option>
+          <option value="monthly">Monthly Report</option>
+          <option value="annual">Annual Report</option>
         </select>
-        <input
-          type="date"
-          value={dateRange.start}
-          onChange={(e) =>
-            setDateRange((prev) => ({ ...prev, start: e.target.value }))
-          }
-          className="border rounded px-2 py-1 w-full sm:w-auto"
-        />
-        <input
-          type="date"
-          value={dateRange.end}
-          onChange={(e) =>
-            setDateRange((prev) => ({ ...prev, end: e.target.value }))
-          }
-          className="border rounded px-2 py-1 w-full sm:w-auto"
-        />
+        {reportType === "monthly" ? (
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="border rounded px-2 py-1 w-full sm:w-auto"
+          />
+        ) : (
+          <input
+            type="number"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            placeholder="Enter year (e.g., 2023)"
+            className="border rounded px-2 py-1 w-full sm:w-auto"
+          />
+        )}
       </div>
-      {selectedReport && dateRange.start && dateRange.end && (
+      {((reportType === "monthly" && selectedMonth) || (reportType === "annual" && selectedYear)) && (
         <PDFDownloadLink
           document={<ReportPDF reportData={generateReportData()} />}
-          fileName={`${selectedReport}-report.pdf`}
+          fileName={`${reportType}-report-${reportType === "monthly" ? selectedMonth : selectedYear}.pdf`}
         >
-          {({ blob, url, loading, error }) => (
+          {({ blob, url, loading }) => (
             <button
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full sm:w-auto"
               disabled={loading}
             >
-              {loading ? "Generating report..." : "Download Report"}
+              {loading ? "Generating report..." : `Download ${reportType === "monthly" ? "Monthly" : "Annual"} Report`}
             </button>
           )}
         </PDFDownloadLink>
