@@ -11,6 +11,7 @@ import RoleProtectedRoute from "./context/RoleProtectedRoute";
 import AdminRoleAssignment from "./context/AdminRoleAssignment";
 import { AuthProvider } from "./context/AuthContext";
 
+
 const App = () => {
   return (
     <Router>

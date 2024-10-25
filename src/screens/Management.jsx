@@ -63,10 +63,10 @@ const Management = () => {
       <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">
         Completed Jobs
       </h1>
+      <ReportGenerator jobs={jobs} /> {/* Moved to the top */}
       <p className="text-base sm:text-lg font-semibold mb-4 sm:mb-6">
         Total value of completed jobs: ${completedJobsValue.toFixed(2)}
       </p>
-
       {jobs.length === 0 ? (
         <p className="text-gray-600 text-center">No completed jobs found.</p>
       ) : (
@@ -104,9 +104,6 @@ const Management = () => {
           ))}
         </div>
       )}
-
-      <ReportGenerator jobs={jobs} />
-
       {isModalOpen && selectedJob && (
         <JobModal
           job={selectedJob}
@@ -139,7 +136,6 @@ const Management = () => {
           }
         />
       )}
-
       {showNotification && (
         <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg text-sm sm:text-base">
           Invoice downloaded successfully!
