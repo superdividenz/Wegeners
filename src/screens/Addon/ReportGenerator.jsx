@@ -1,7 +1,7 @@
 // Reportgenerator.jsx
 import React, { useState } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import ReportPDF from "./ReportPDF";
+// import ReportPDF from "./ReportPDF";
 
 const ReportGenerator = ({ jobs }) => {
   const [reportType, setReportType] = useState("monthly");
