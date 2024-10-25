@@ -1,3 +1,4 @@
+// Reportgenerator.jsx
 import React, { useState } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import ReportPDF from "./ReportPDF";
@@ -38,7 +39,10 @@ const ReportGenerator = ({ jobs }) => {
     return {
       type: reportType === "monthly" ? "Monthly Report" : "Annual Report",
       data: {
-        month: reportType === "monthly" ? startDate.toLocaleString("default", { month: "long" }) : null,
+        month:
+          reportType === "monthly"
+            ? startDate.toLocaleString("default", { month: "long" })
+            : null,
         year: reportType === "monthly" ? startDate.getFullYear() : selectedYear,
         totalJobs: filteredJobs.length,
         completedJobs: completedJobs,
@@ -85,17 +89,24 @@ const ReportGenerator = ({ jobs }) => {
           />
         )}
       </div>
-      {((reportType === "monthly" && selectedMonth) || (reportType === "annual" && selectedYear)) && (
+      {((reportType === "monthly" && selectedMonth) ||
+        (reportType === "annual" && selectedYear)) && (
         <PDFDownloadLink
           document={<ReportPDF reportData={generateReportData()} />}
-          fileName={`${reportType}-report-${reportType === "monthly" ? selectedMonth : selectedYear}.pdf`}
+          fileName={`${reportType}-report-${
+            reportType === "monthly" ? selectedMonth : selectedYear
+          }.pdf`}
         >
           {({ blob, url, loading }) => (
             <button
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full sm:w-auto"
               disabled={loading}
             >
-              {loading ? "Generating report..." : `Download ${reportType === "monthly" ? "Monthly" : "Annual"} Report`}
+              {loading
+                ? "Generating report..."
+                : `Download ${
+                    reportType === "monthly" ? "Monthly" : "Annual"
+                  } Report`}
             </button>
           )}
         </PDFDownloadLink>

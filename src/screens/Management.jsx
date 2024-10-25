@@ -1,3 +1,4 @@
+// Management.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { db } from "../firebase/firebase";
 import { collection, getDocs } from "firebase/firestore";
