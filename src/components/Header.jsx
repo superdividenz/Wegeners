@@ -1,4 +1,3 @@
-// Header.jsx
 import React, { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import { auth } from "../firebase/firebase";
@@ -103,11 +102,13 @@ const Header = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <img
-              src={logo}
-              alt="Wegener Sealer Logo"
-              className="h-12 w-auto transition-transform duration-300 hover:scale-110"
-            />
+            <NavLink to="/" onClick={closeMobileMenu}>
+              <img
+                src={logo}
+                alt="Wegener Sealer Logo"
+                className="h-12 w-auto transition-transform duration-300 hover:scale-110"
+              />
+            </NavLink>
           </div>
           <nav className="hidden md:block">
             <ul className="flex space-x-6">

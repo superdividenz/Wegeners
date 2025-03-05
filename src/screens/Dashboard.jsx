@@ -106,8 +106,8 @@ const Dashboard = () => {
   // Convert job date strings to Date objects for highlighting
   const jobDates = jobs
     .map((job) => {
-      if (job.date) {
-        const [month, day, year] = job.date.split("/");
+      if (job.date) { // Ensure job.date exists before splitting
+        const [month, day, year] = job.date.split("/"); // Safe to split now
         return new Date(year, month - 1, day).toDateString();
       }
       return null;
@@ -116,7 +116,7 @@ const Dashboard = () => {
 
   // Filter jobs for the selected date
   const jobsForSelectedDate = jobs.filter((job) => {
-    if (job.date) {
+    if (job.date) { // Ensure job.date exists before trying to split it
       const [month, day, year] = job.date.split("/");
       const jobDate = new Date(year, month - 1, day).toDateString();
       return jobDate === date.toDateString();
@@ -124,13 +124,16 @@ const Dashboard = () => {
     return false;
   });
 
-  // already jobs?
+  // Check if a job exists on the selected date
   const hasJobsOnDate = (date) => {
     const dateString = date.toDateString();
     return jobs.some((job) => {
-      const [month, day, year] = job.date.split("/");
-      const jobDate = new Date(year, month - 1, day).toDateString();
-      return jobDate === dateString;
+      if (job.date) { // Ensure job.date exists before splitting
+        const [month, day, year] = job.date.split("/");
+        const jobDate = new Date(year, month - 1, day).toDateString();
+        return jobDate === dateString;
+      }
+      return false;
     });
   };
 
