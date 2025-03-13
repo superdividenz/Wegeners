@@ -19,6 +19,7 @@ const Login = () => {
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/dashboard"); // Redirect to dashboard after successful login
     } catch (error) {
+      console.error("Firebase auth error: ", error.message); // Log error here
       setError(error.message);
     } finally {
       setIsLoading(false);

@@ -1,29 +1,31 @@
 import React, { useState } from "react";
 import Papa from "papaparse";
-import { getFirestore, collection, getDocs, setDoc, doc, updateDoc } from "firebase/firestore";
-import { v4 as uuidv4 } from "uuid";
-import { parse, isValid } from "date-fns";  // Import date-fns for date parsing
+import { getFirestore, collection, getDocs, doc, setDoc, updateDoc } from "firebase/firestore"; // Ensure all Firestore methods are imported
+import { v4 as uuidv4 } from "uuid"; // Import uuid for generating unique ids
+import { parse, isValid } from "date-fns"; // Import date-fns for date parsing
 
 const AddData = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Handle file upload
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
       setFile(file);
-      setError("");
+      setError(""); // Reset any previous errors
     }
   };
 
+  // Function to format the date
   const formatDate = (dateString) => {
     if (!dateString) {
       return null; // If the date is undefined or empty, return null
     }
-  
+
     let formattedDateString = dateString;
-  
+
     // Check if the date is in M/D/YYYY format (e.g., 3/4/2025)
     if (dateString.includes("/")) {
       formattedDateString = dateString.replace(/\//g, "-"); // Replace '/' with '-'
@@ -34,12 +36,12 @@ const AddData = () => {
         return `${p1.padStart(2, "0")}-${p2.padStart(2, "0")}-${year}`;
       });
     }
-  
-    const parsedDate = parse(formattedDateString, "dd-MM-yyyy", new Date());
-    return isValid(parsedDate) ? parsedDate : null;  // Return valid date or null if invalid
-  };
-  
 
+    const parsedDate = parse(formattedDateString, "dd-MM-yyyy", new Date());
+    return isValid(parsedDate) ? parsedDate : null; // Return valid date or null if invalid
+  };
+
+  // Handle CSV import
   const handleCSVImport = async () => {
     if (!file) return; // If no file is selected, do nothing
 
@@ -69,11 +71,11 @@ const AddData = () => {
             const jobId = existingJob ? existingJob.id : uuidv4();
             const jobRef = doc(db, "jobs", jobId);
 
-            const formattedDate = formatDate(job.date);  // Format the date
+            const formattedDate = formatDate(job.date); // Format the date
 
             if (!formattedDate) {
               console.error(`Invalid date for job ${job.name}: ${job.date}`);
-              return;  // Skip invalid date entries
+              return; // Skip invalid date entries
             }
 
             const jobData = {
@@ -81,7 +83,7 @@ const AddData = () => {
               email: job.email,
               phone: job.phone,
               address: job.address,
-              date: formattedDate,  // Save formatted date
+              date: formattedDate, // Save formatted date
               price: job.price,
               info: job.info,
             };
@@ -111,10 +113,42 @@ const AddData = () => {
     });
   };
 
+  // Function to download data from Firestore as CSV
+  const handleCSVDownload = async () => {
+    setLoading(true);
+    const db = getFirestore();
+    const jobsRef = collection(db, "jobs");
+
+    try {
+      // Get all jobs from Firestore
+      const querySnapshot = await getDocs(jobsRef);
+      const jobsData = querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id, // Include document ID if needed
+      }));
+
+      // Convert jobs data to CSV format
+      const csv = Papa.unparse(jobsData);
+      
+      // Trigger the download of the CSV file
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "jobs_data.csv"; // Filename for the downloaded file
+      link.click();
+
+      setLoading(false);
+      alert("CSV download started!");
+    } catch (err) {
+      setError("Error downloading CSV: " + err.message);
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <h1 className="text-center text-4xl font-bold mb-6 text-gray-800">
-        Import Jobs from CSV
+        Import and Export Jobs Data
       </h1>
 
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
@@ -147,6 +181,19 @@ const AddData = () => {
           } text-white px-4 py-3 mt-6 rounded-md transition duration-200 w-full`}
         >
           {loading ? "Importing..." : "Import CSV"}
+        </button>
+
+        {/* Button to download the data as CSV */}
+        <button
+          onClick={handleCSVDownload}
+          disabled={loading}
+          className={`${
+            loading
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-blue-500 hover:bg-blue-600"
+          } text-white px-4 py-3 mt-4 rounded-md transition duration-200 w-full`}
+        >
+          {loading ? "Downloading..." : "Download CSV"}
         </button>
       </div>
     </div>
