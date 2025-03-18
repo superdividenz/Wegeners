@@ -5,11 +5,9 @@ import Management from "./screens/Management";
 import Dashboard from "./screens/Dashboard";
 import Login from "./screens/Login";
 import Customer from "./screens/Customer";
-import AddBid from "./screens/AddBid"; // Import AddBid page
-import ProtectedRoute from "./components/ProtectedRoute";
-import RoleProtectedRoute from "./context/RoleProtectedRoute";
-import AdminRoleAssignment from "./context/AdminRoleAssignment";
+import AddBid from "./screens/AddBid";
 import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   return (
@@ -17,16 +15,15 @@ const App = () => {
       <AuthProvider>
         <Header />
         <Routes>
-          <Route path="/" element={<AddBid />} /> {/* AddBid is now the home page */}
-          <Route path="/add-bid" element={<AddBid />} /> {/* Optional route for AddBid */}
+          <Route path="/" element={<AddBid />} />
+          <Route path="/add-bid" element={<AddBid />} />
           <Route path="/login" element={<Login />} />
+
           <Route
             path="/management"
             element={
               <ProtectedRoute>
-                <RoleProtectedRoute requiredRole="admin">
-                  <Management />
-                </RoleProtectedRoute>
+                <Management />
               </ProtectedRoute>
             }
           />
@@ -44,14 +41,6 @@ const App = () => {
               <ProtectedRoute>
                 <Customer />
               </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin-assign-role"
-            element={
-              <RoleProtectedRoute requiredRole="admin">
-                <AdminRoleAssignment />
-              </RoleProtectedRoute>
             }
           />
         </Routes>

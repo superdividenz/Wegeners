@@ -1,19 +1,19 @@
 import React, { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
-import { auth } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { useAuth } from "../context/AuthContext";
+import { auth } from "../firebase/firebase";
 import logo from "./img/Logo.png";
 
 const Header = () => {
-  const [user] = useAuthState(auth);
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate("/");
+      navigate("/login");
     } catch (error) {
       console.error("Error logging out:", error);
     }
@@ -29,69 +29,24 @@ const Header = () => {
 
   const NavLinks = () => (
     <>
-      {user && (
-        <li>
-          <NavLink
-            to="/management"
-            className={({ isActive }) =>
-              `inline-block hover:text-blue-200 hover-scale ${
-                isActive ? "text-yellow-400" : ""
-              }`
-            }
-          >
-            Management
-          </NavLink>
-        </li>
-      )}
-      {user && (
-        <li>
-          <NavLink
-            to="/dashboard"
-            className={({ isActive }) =>
-              `inline-block hover:text-blue-200 hover-scale ${
-                isActive ? "text-yellow-400" : ""
-              }`
-            }
-          >
-            Dashboard
-          </NavLink>
-        </li>
-      )}
-      {user && (
-        <li>
-          <NavLink
-            to="/customer"
-            className={({ isActive }) =>
-              `inline-block hover:text-blue-200 hover-scale ${
-                isActive ? "text-yellow-400" : ""
-              }`
-            }
-          >
-            Customer
-          </NavLink>
-        </li>
-      )}
-      {user ? (
-        <li>
-          <button
-            onClick={handleLogout}
-            className="inline-block hover:text-blue-200 hover-scale"
-          >
-            Logout
-          </button>
-        </li>
+      {currentUser ? (
+        <>
+          <li>
+            <NavLink to="/management">Management</NavLink>
+          </li>
+          <li>
+            <NavLink to="/dashboard">Dashboard</NavLink>
+          </li>
+          <li>
+            <NavLink to="/customer">Customer</NavLink>
+          </li>
+          <li>
+            <button onClick={handleLogout}>Logout</button>
+          </li>
+        </>
       ) : (
         <li>
-          <NavLink
-            to="/login"
-            className={({ isActive }) =>
-              `inline-block hover:text-blue-200 hover-scale ${
-                isActive ? "text-yellow-400" : ""
-              }`
-            }
-          >
-            Login
-          </NavLink>
+          <NavLink to="/login">Login</NavLink>
         </li>
       )}
     </>
@@ -134,7 +89,6 @@ const Header = () => {
           </div>
         </div>
       </div>
-      {/* Mobile menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden" onClick={closeMobileMenu}>
           <nav className="px-2 pt-2 pb-4">
