@@ -10,7 +10,7 @@ import {
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "./Addon/Modal";
-import { FaMapMarkerAlt } from "react-icons/fa";
+import { FaMapMarkerAlt, FaChevronDown } from "react-icons/fa";
 
 const Dashboard = () => {
   const [jobs, setJobs] = useState([]);
@@ -22,7 +22,6 @@ const Dashboard = () => {
   const [blockedDays, setBlockedDays] = useState([]);
   const [undatedJobs, setUndatedJobs] = useState([]);
 
-  // Fetch jobs from Firebase
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
@@ -32,7 +31,6 @@ const Dashboard = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      // Separate jobs with and without dates
       const jobsWithDate = jobList.filter(job => job.date && job.date.trim() !== "");
       const jobsWithoutDate = jobList.filter(job => !job.date || job.date.trim() === "");
       setJobs(jobsWithDate);
@@ -45,7 +43,6 @@ const Dashboard = () => {
     }
   }, []);
 
-  // Fetch blocked days from Firebase
   const fetchBlockedDays = useCallback(async () => {
     try {
       const blockedDaysRef = doc(db, "blockedDays", "schedule");
@@ -63,13 +60,11 @@ const Dashboard = () => {
     fetchBlockedDays();
   }, [fetchJobs, fetchBlockedDays]);
 
-  // Toggle block/unblock days and persist to Firebase
   const toggleBlockDay = async (selectedDate) => {
     const dateString = selectedDate.toDateString();
     const isCurrentlyBlocked = blockedDays.includes(dateString);
 
     if (!isCurrentlyBlocked && hasJobsOnDate(selectedDate)) {
-      console.log("Cannot block a date with scheduled jobs.");
       return;
     }
 
@@ -87,7 +82,6 @@ const Dashboard = () => {
     }
   };
 
-  // Handle job click from either list or dropdown
   const handleJobClick = (job) => {
     if (job.date) {
       const jobDate = new Date(
@@ -105,7 +99,6 @@ const Dashboard = () => {
     }
   };
 
-  // Convert job date strings to Date objects for highlighting
   const jobDates = jobs
     .map((job) => {
       if (job.date) {
@@ -116,7 +109,6 @@ const Dashboard = () => {
     })
     .filter(Boolean);
 
-  // Filter jobs for the selected date
   const jobsForSelectedDate = jobs.filter((job) => {
     if (job.date) {
       const [month, day, year] = job.date.split("/");
@@ -126,7 +118,6 @@ const Dashboard = () => {
     return false;
   });
 
-  // Check if a job exists on the selected date
   const hasJobsOnDate = (date) => {
     const dateString = date.toDateString();
     return jobs.some((job) => {
@@ -139,24 +130,19 @@ const Dashboard = () => {
     });
   };
 
-  // Highlight dates with jobs and blocked days
   const tileClassName = ({ date }) => {
     const dateString = date.toDateString();
     if (jobDates.includes(dateString)) {
-      return "highlight job-day";
+      return "bg-blue-100 text-blue-800 font-semibold";
     }
     if (blockedDays.includes(dateString)) {
-      return "blocked";
+      return "bg-red-200 text-red-800 line-through";
     }
     return null;
   };
 
-  // Disable blocked days in the calendar
-  const tileDisabled = ({ date }) => {
-    return false;
-  };
+  const tileDisabled = ({ date }) => false;
 
-  // Open address in Google Maps
   const openInGoogleMaps = (address) => {
     const encodedAddress = encodeURIComponent(address);
     window.open(
@@ -165,13 +151,10 @@ const Dashboard = () => {
     );
   };
 
-  // Mark job as completed in Firebase
   const markJobAsCompleted = async (jobId) => {
     try {
       const jobRef = doc(db, "jobs", jobId);
-      await updateDoc(jobRef, {
-        completed: true,
-      });
+      await updateDoc(jobRef, { completed: true });
       setJobs((prevJobs) =>
         prevJobs.map((job) =>
           job.id === jobId ? { ...job, completed: true } : job
@@ -189,152 +172,163 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return <div className="text-center mt-8">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-center mt-8 text-red-500">{error}</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen text-red-500 text-lg">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8">
-      <div className="flex flex-col items-center mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
-        {/* Dropdown for undated jobs */}
-        <div className="w-full max-w-md">
-          <select
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onChange={(e) => {
-              if (e.target.value) {
-                const job = undatedJobs.find(job => job.id === e.target.value);
-                handleJobClick(job);
-              }
-            }}
-            defaultValue=""
-          >
-            <option value="" disabled>
-              Upcoming Jobs Without Dates ({undatedJobs.length})
-            </option>
-            {undatedJobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.name} - {job.address || "No address"}
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center sm:text-left">
+            Dashboard
+          </h1>
+          <div className="relative">
+            <select
+              className="w-full appearance-none bg-white border border-gray-300 rounded-lg p-3 pl-4 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              onChange={(e) => {
+                if (e.target.value) {
+                  const job = undatedJobs.find(job => job.id === e.target.value);
+                  handleJobClick(job);
+                  e.target.value = "";
+                }
+              }}
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Undated Jobs ({undatedJobs.length})
               </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-          <h2 className="text-center text-lg sm:text-xl font-semibold mb-4">
-            Calendar
-          </h2>
-          <Calendar
-            onChange={setDate}
-            value={date}
-            tileClassName={tileClassName}
-            tileDisabled={tileDisabled}
-            onClickDay={toggleBlockDay}
-            className="react-calendar w-full"
-            tileContent={({ date }) => {
-              const dateString = date.toDateString();
-              if (blockedDays.includes(dateString)) {
-                return <span title="This date is blocked out">🚫</span>;
-              }
-              return null;
-            }}
-          />
+              {undatedJobs.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.name} - {job.address || "No address"}
+                </option>
+              ))}
+            </select>
+            <FaChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+          </div>
         </div>
 
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">
-            Jobs on {date.toLocaleDateString()}
-          </h2>
-          {jobsForSelectedDate.length > 0 ? (
-            <ul className="space-y-2">
-              {jobsForSelectedDate.map((job) => (
-                <li
-                  key={job.id}
-                  className={`p-2 rounded cursor-pointer transition duration-200 ${
-                    blockedDays.includes(
-                      new Date(
-                        job.date.split("/").reverse().join("-")
-                      ).toDateString()
-                    )
-                      ? "bg-red-200"
-                      : "hover:bg-gray-100"
-                  }`}
-                  onClick={() => handleJobClick(job)}
-                >
-                  {job.date || "N/A"} - {job.address || "N/A"}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No jobs scheduled for this date.</p>
-          )}
-        </div>
-      </div>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        {selectedJob && (
-          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg max-w-md mx-auto">
-            <h2 className="text-center text-xl sm:text-2xl font-bold mb-4">
-              Job Details
-            </h2>
-            <div className="space-y-2 text-sm sm:text-base">
-              <p>
-                <strong>Name:</strong> {selectedJob.name || "N/A"}
-              </p>
-              <p>
-                <strong>Date:</strong> {selectedJob.date || "Not scheduled"}
-              </p>
-              <p>
-                <strong>Email:</strong> {selectedJob.email || "N/A"}
-              </p>
-              <p>
-                <strong>Phone:</strong> {selectedJob.phone || "N/A"}
-              </p>
-              <p>
-                <strong>Address:</strong> {selectedJob.address || "N/A"}
-              </p>
-              {selectedJob.address && (
-                <button
-                  onClick={() => openInGoogleMaps(selectedJob.address)}
-                  className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-sm transition duration-200"
-                >
-                  <FaMapMarkerAlt className="mr-2" />
-                  View in Google Maps
-                </button>
-              )}
-              <p>
-                <strong>Info:</strong> {selectedJob.info || "N/A"}
-              </p>
-              <p>
-                <strong>Price:</strong> {selectedJob.price || "N/A"}
-              </p>
-              <p>
-                <strong>Status:</strong>{" "}
-                {selectedJob.completed ? "Completed" : "Pending"}
-              </p>
-            </div>
-            <div className="mt-6 flex flex-col sm:flex-row justify-between space-y-2 sm:space-y-0 sm:space-x-2">
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
-              >
-                Close
-              </button>
-              {!selectedJob.completed && (
-                <button
-                  onClick={() => markJobAsCompleted(selectedJob.id)}
-                  className="w-full sm:w-auto bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
-                >
-                  Mark as Completed
-                </button>
-              )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 flex justify-center">
+            <div className="w-full max-w-md">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
+                Calendar
+              </h2>
+              <Calendar
+                onChange={setDate}
+                value={date}
+                tileClassName={tileClassName}
+                tileDisabled={tileDisabled}
+                onClickDay={toggleBlockDay}
+                className="w-full border-none mx-auto"
+                tileContent={({ date }) => {
+                  const dateString = date.toDateString();
+                  if (blockedDays.includes(dateString)) {
+                    return <span className="text-xs">🚫</span>;
+                  }
+                  return null;
+                }}
+              />
             </div>
           </div>
-        )}
-      </Modal>
+
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Jobs on {date.toLocaleDateString()}
+            </h2>
+            {jobsForSelectedDate.length > 0 ? (
+              <ul className="space-y-3 max-h-96 overflow-y-auto">
+                {jobsForSelectedDate.map((job) => (
+                  <li
+                    key={job.id}
+                    className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                      blockedDays.includes(
+                        new Date(
+                          job.date.split("/").reverse().join("-")
+                        ).toDateString()
+                      )
+                        ? "bg-red-100 hover:bg-red-200"
+                        : "bg-gray-50 hover:bg-gray-100"
+                    }`}
+                    onClick={() => handleJobClick(job)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">
+                        {job.date} - {job.address || "N/A"}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {job.completed ? "✓" : ""}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500 italic">No jobs scheduled for this date.</p>
+            )}
+          </div>
+        </div>
+
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          {selectedJob && (
+            <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+                Job Details
+              </h2>
+              <div className="space-y-3 text-gray-700">
+                <p><strong>Name:</strong> {selectedJob.name || "N/A"}</p>
+                <p><strong>Date:</strong> {selectedJob.date || "Not scheduled"}</p>
+                <p><strong>Email:</strong> {selectedJob.email || "N/A"}</p>
+                <p><strong>Phone:</strong> {selectedJob.phone || "N/A"}</p>
+                <p><strong>Address:</strong> {selectedJob.address || "N/A"}</p>
+                {selectedJob.address && (
+                  <button
+                    onClick={() => openInGoogleMaps(selectedJob.address)}
+                    className="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
+                  >
+                    <FaMapMarkerAlt className="mr-2" />
+                    View in Google Maps
+                  </button>
+                )}
+                <p><strong>Info:</strong> {selectedJob.info || "N/A"}</p>
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span className={selectedJob.completed ? "text-green-600" : "text-yellow-600"}>
+                    {selectedJob.completed ? "Completed" : "Pending"}
+                  </span>
+                </p>
+              </div>
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all duration-200"
+                >
+                  Close
+                </button>
+                {!selectedJob.completed && (
+                  <button
+                    onClick={() => markJobAsCompleted(selectedJob.id)}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
+                  >
+                    Mark as Completed
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </Modal>
+      </div>
     </div>
   );
 };
