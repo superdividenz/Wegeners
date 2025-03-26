@@ -20,6 +20,7 @@ const Dashboard = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [date, setDate] = useState(new Date());
   const [blockedDays, setBlockedDays] = useState([]);
+  const [undatedJobs, setUndatedJobs] = useState([]);
 
   // Fetch jobs from Firebase
   const fetchJobs = useCallback(async () => {
@@ -31,7 +32,11 @@ const Dashboard = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      setJobs(jobList);
+      // Separate jobs with and without dates
+      const jobsWithDate = jobList.filter(job => job.date && job.date.trim() !== "");
+      const jobsWithoutDate = jobList.filter(job => !job.date || job.date.trim() === "");
+      setJobs(jobsWithDate);
+      setUndatedJobs(jobsWithoutDate);
     } catch (error) {
       console.error("Error fetching jobs:", error);
       setError("Failed to load jobs. Please try again later.");
@@ -47,8 +52,6 @@ const Dashboard = () => {
       const blockedDaysDoc = await getDoc(blockedDaysRef);
       if (blockedDaysDoc.exists()) {
         setBlockedDays(blockedDaysDoc.data().dates || []);
-      } else {
-        console.log("No blocked days found in Firebase.");
       }
     } catch (error) {
       console.error("Error fetching blocked days: ", error);
@@ -57,7 +60,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchJobs();
-    fetchBlockedDays(); // Load blocked days on component mount
+    fetchBlockedDays();
   }, [fetchJobs, fetchBlockedDays]);
 
   // Toggle block/unblock days and persist to Firebase
@@ -65,10 +68,9 @@ const Dashboard = () => {
     const dateString = selectedDate.toDateString();
     const isCurrentlyBlocked = blockedDays.includes(dateString);
 
-    // Check if there are jobs on this date
     if (!isCurrentlyBlocked && hasJobsOnDate(selectedDate)) {
       console.log("Cannot block a date with scheduled jobs.");
-      return; // Exit the function without blocking the date
+      return;
     }
 
     const updatedBlockedDays = isCurrentlyBlocked
@@ -80,24 +82,24 @@ const Dashboard = () => {
     try {
       const blockedDaysRef = doc(db, "blockedDays", "schedule");
       await updateDoc(blockedDaysRef, { dates: updatedBlockedDays });
-      console.log(
-        `Date ${dateString} ${isCurrentlyBlocked ? "unblocked" : "blocked"}.`
-      );
     } catch (error) {
       console.error("Error updating blocked days in Firebase:", error);
     }
   };
 
-  // Handle job click for blocking/unblocking
+  // Handle job click from either list or dropdown
   const handleJobClick = (job) => {
-    const jobDate = new Date(
-      job.date.split("/").reverse().join("-")
-    ).toDateString();
-    if (blockedDays.includes(jobDate)) {
-      // Unblock the date if it's already blocked
-      toggleBlockDay(new Date(job.date));
+    if (job.date) {
+      const jobDate = new Date(
+        job.date.split("/").reverse().join("-")
+      ).toDateString();
+      if (blockedDays.includes(jobDate)) {
+        toggleBlockDay(new Date(job.date));
+      } else {
+        setSelectedJob(job);
+        setIsModalOpen(true);
+      }
     } else {
-      // Open the modal if the date is not blocked
       setSelectedJob(job);
       setIsModalOpen(true);
     }
@@ -106,8 +108,8 @@ const Dashboard = () => {
   // Convert job date strings to Date objects for highlighting
   const jobDates = jobs
     .map((job) => {
-      if (job.date) { // Ensure job.date exists before splitting
-        const [month, day, year] = job.date.split("/"); // Safe to split now
+      if (job.date) {
+        const [month, day, year] = job.date.split("/");
         return new Date(year, month - 1, day).toDateString();
       }
       return null;
@@ -116,7 +118,7 @@ const Dashboard = () => {
 
   // Filter jobs for the selected date
   const jobsForSelectedDate = jobs.filter((job) => {
-    if (job.date) { // Ensure job.date exists before trying to split it
+    if (job.date) {
       const [month, day, year] = job.date.split("/");
       const jobDate = new Date(year, month - 1, day).toDateString();
       return jobDate === date.toDateString();
@@ -128,7 +130,7 @@ const Dashboard = () => {
   const hasJobsOnDate = (date) => {
     const dateString = date.toDateString();
     return jobs.some((job) => {
-      if (job.date) { // Ensure job.date exists before splitting
+      if (job.date) {
         const [month, day, year] = job.date.split("/");
         const jobDate = new Date(year, month - 1, day).toDateString();
         return jobDate === dateString;
@@ -141,7 +143,7 @@ const Dashboard = () => {
   const tileClassName = ({ date }) => {
     const dateString = date.toDateString();
     if (jobDates.includes(dateString)) {
-      return "highlight job-day"; // Add 'job-day' class
+      return "highlight job-day";
     }
     if (blockedDays.includes(dateString)) {
       return "blocked";
@@ -151,7 +153,7 @@ const Dashboard = () => {
 
   // Disable blocked days in the calendar
   const tileDisabled = ({ date }) => {
-    return false; // Allow clicking on all days, including blocked ones
+    return false;
   };
 
   // Open address in Google Maps
@@ -175,6 +177,11 @@ const Dashboard = () => {
           job.id === jobId ? { ...job, completed: true } : job
         )
       );
+      setUndatedJobs((prevJobs) =>
+        prevJobs.map((job) =>
+          job.id === jobId ? { ...job, completed: true } : job
+        )
+      );
       setSelectedJob((prevJob) => ({ ...prevJob, completed: true }));
     } catch (error) {
       console.error("Error marking job as completed: ", error);
@@ -193,6 +200,28 @@ const Dashboard = () => {
     <div className="container mx-auto px-4 py-6 sm:py-8">
       <div className="flex flex-col items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4">Dashboard</h1>
+        {/* Dropdown for undated jobs */}
+        <div className="w-full max-w-md">
+          <select
+            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => {
+              if (e.target.value) {
+                const job = undatedJobs.find(job => job.id === e.target.value);
+                handleJobClick(job);
+              }
+            }}
+            defaultValue=""
+          >
+            <option value="" disabled>
+              Upcoming Jobs Without Dates ({undatedJobs.length})
+            </option>
+            {undatedJobs.map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.name} - {job.address || "No address"}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white shadow rounded-lg p-4 sm:p-6">
@@ -202,14 +231,14 @@ const Dashboard = () => {
           <Calendar
             onChange={setDate}
             value={date}
-            tileClassName={tileClassName} // Highlight job and blocked days
-            tileDisabled={tileDisabled} // Disable blocked days
-            onClickDay={toggleBlockDay} // Block/unblock day on click
+            tileClassName={tileClassName}
+            tileDisabled={tileDisabled}
+            onClickDay={toggleBlockDay}
             className="react-calendar w-full"
             tileContent={({ date }) => {
               const dateString = date.toDateString();
               if (blockedDays.includes(dateString)) {
-                return <span title="This date is blocked out">🚫</span>; // Tooltip message
+                return <span title="This date is blocked out">🚫</span>;
               }
               return null;
             }}
@@ -234,7 +263,7 @@ const Dashboard = () => {
                       ? "bg-red-200"
                       : "hover:bg-gray-100"
                   }`}
-                  onClick={() => handleJobClick(job)} // Use handleJobClick to block/unblock
+                  onClick={() => handleJobClick(job)}
                 >
                   {job.date || "N/A"} - {job.address || "N/A"}
                 </li>
@@ -256,7 +285,7 @@ const Dashboard = () => {
                 <strong>Name:</strong> {selectedJob.name || "N/A"}
               </p>
               <p>
-                <strong>Date:</strong> {selectedJob.date || "N/A"}
+                <strong>Date:</strong> {selectedJob.date || "Not scheduled"}
               </p>
               <p>
                 <strong>Email:</strong> {selectedJob.email || "N/A"}
