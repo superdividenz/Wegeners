@@ -1,201 +1,264 @@
 import React, { useState } from "react";
-import Papa from "papaparse";
-import { getFirestore, collection, getDocs, doc, setDoc, updateDoc } from "firebase/firestore"; // Ensure all Firestore methods are imported
-import { v4 as uuidv4 } from "uuid"; // Import uuid for generating unique ids
-import { parse, isValid } from "date-fns"; // Import date-fns for date parsing
+import { useForm } from "react-hook-form";
+import { getFirestore, collection, getDocs, query, where, updateDoc, doc } from "firebase/firestore";
 
 const AddData = () => {
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { register, handleSubmit, setValue, reset } = useForm();
+  const [searchname, setSearchLastName] = useState("");
+  const [matchingJobs, setMatchingJobs] = useState([]);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
-  // Handle file upload
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setFile(file);
-      setError(""); // Reset any previous errors
-    }
-  };
+  // Handle search input to filter jobs
+  const handleSearch = async (e) => {
+    const input = e.target.value;
+    setSearchLastName(input);
 
-  // Function to format the date
-  const formatDate = (dateString) => {
-    if (!dateString) {
-      return null; // If the date is undefined or empty, return null
-    }
-
-    let formattedDateString = dateString;
-
-    // Check if the date is in M/D/YYYY format (e.g., 3/4/2025)
-    if (dateString.includes("/")) {
-      formattedDateString = dateString.replace(/\//g, "-"); // Replace '/' with '-'
+    if (input.length > 0) {
+      const db = getFirestore();
+      const jobsRef = collection(db, "jobs");
+      const q = query(
+        jobsRef,
+        where("name", ">=", input),
+        where("name", "<=", input + "\uf8ff")
+      );
+      const querySnapshot = await getDocs(q);
+      const jobsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setMatchingJobs(jobsData);
     } else {
-      // Ensure the date is in D-M-YYYY format (with single or double digits)
-      formattedDateString = dateString.replace(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/, (match, p1, p2, p3) => {
-        const year = p3.length === 2 ? `20${p3}` : p3;
-        return `${p1.padStart(2, "0")}-${p2.padStart(2, "0")}-${year}`;
-      });
+      setMatchingJobs([]);
     }
-
-    const parsedDate = parse(formattedDateString, "dd-MM-yyyy", new Date());
-    return isValid(parsedDate) ? parsedDate : null; // Return valid date or null if invalid
   };
 
-  // Handle CSV import
-  const handleCSVImport = async () => {
-    if (!file) return; // If no file is selected, do nothing
-
-    setLoading(true);
-    setError(""); // Reset error state
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (result) => {
-        const jobsData = result.data;
-        const db = getFirestore();
-        const jobsRef = collection(db, "jobs");
-
-        try {
-          // Get existing jobs from Firestore
-          const querySnapshot = await getDocs(jobsRef);
-          const existingJobs = new Map();
-          querySnapshot.forEach((doc) => {
-            const jobData = doc.data();
-            existingJobs.set(jobData.name, { id: doc.id, ...jobData });
-          });
-
-          // Process each row from the CSV file
-          const promises = jobsData.map(async (job) => {
-            const existingJob = existingJobs.get(job.name);
-            const jobId = existingJob ? existingJob.id : uuidv4();
-            const jobRef = doc(db, "jobs", jobId);
-
-            const formattedDate = formatDate(job.date); // Format the date
-
-            if (!formattedDate) {
-              console.error(`Invalid date for job ${job.name}: ${job.date}`);
-              return; // Skip invalid date entries
-            }
-
-            const jobData = {
-              name: job.name,
-              email: job.email,
-              phone: job.phone,
-              address: job.address,
-              date: formattedDate, // Save formatted date
-              price: job.price,
-              info: job.info,
-            };
-
-            if (existingJob) {
-              // If the job already exists, update it
-              await updateDoc(jobRef, jobData);
-            } else {
-              // If the job is new, add it
-              await setDoc(jobRef, jobData);
-            }
-          });
-
-          // Wait for all operations to finish
-          await Promise.all(promises);
-          setLoading(false);
-          alert("CSV imported successfully!");
-        } catch (err) {
-          setError("Error importing CSV: " + err.message);
-          setLoading(false);
-        }
-      },
-      error: (error) => {
-        setError("Error reading CSV file: " + error.message);
-        setLoading(false);
-      },
+  // Handle job selection from search
+  const handleJobClick = (job) => {
+    setSelectedJob(job);
+    setIsSearchModalOpen(true);
+    Object.keys(job).forEach((key) => {
+      setValue(key, key === "date" ? formatDateForInput(job[key]) : job[key]);
     });
   };
 
-  // Function to download data from Firestore as CSV
-  const handleCSVDownload = async () => {
-    setLoading(true);
+  // Format date functions
+  const formatDateForInput = (dateStr) => {
+    if (!dateStr || !dateStr.includes("/")) return dateStr;
+    const [month, day, year] = dateStr.split("/");
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  };
+
+  const formatDateForStorage = (dateStr) => {
+    if (!dateStr || !dateStr.includes("-")) return dateStr;
+    const [year, month, day] = dateStr.split("-");
+    return `${month}/${day}/${year}`;
+  };
+
+  // Handle update submission
+  const onSubmit = async (data) => {
+    if (!selectedJob) return;
+
     const db = getFirestore();
-    const jobsRef = collection(db, "jobs");
+    const jobDocRef = doc(db, "jobs", selectedJob.id);
 
     try {
-      // Get all jobs from Firestore
-      const querySnapshot = await getDocs(jobsRef);
-      const jobsData = querySnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id, // Include document ID if needed
-      }));
+      const updatedData = {
+        ...data,
+        date: formatDateForStorage(data.date),
+        completed: selectedJob.completed || false,
+      };
+      await updateDoc(jobDocRef, updatedData);
+      alert("Job updated successfully");
+      setIsSearchModalOpen(false);
+      reset();
+      setSelectedJob(null);
+      setMatchingJobs([]);
+      setSearchLastName("");
+    } catch (error) {
+      console.error("Error updating job: ", error);
+    }
+  };
 
-      // Convert jobs data to CSV format
-      const csv = Papa.unparse(jobsData);
-      
-      // Trigger the download of the CSV file
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "jobs_data.csv"; // Filename for the downloaded file
-      link.click();
-
-      setLoading(false);
-      alert("CSV download started!");
-    } catch (err) {
-      setError("Error downloading CSV: " + err.message);
-      setLoading(false);
+  // Handle modal closing
+  const handleClickOutside = (event) => {
+    if (event.target.classList.contains("modal-overlay")) {
+      setIsModalOpen(false);
+      setIsSearchModalOpen(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <h1 className="text-center text-4xl font-bold mb-6 text-gray-800">
-        Import and Export Jobs Data
+        Customer
       </h1>
 
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg">
         <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileUpload}
-          className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+          type="text"
+          value={searchname}
+          onChange={handleSearch}
+          placeholder="Search by Name"
+          className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
         />
-
-        {file && (
-          <div className="mt-4 text-sm text-gray-600">
-            <p>Selected file: {file.name}</p>
-          </div>
+        {matchingJobs.length > 0 && (
+          <ul className="divide-y divide-gray-200 max-h-60 overflow-y-auto">
+            {matchingJobs.map((job) => (
+              <li
+                key={job.id}
+                className="p-3 hover:bg-gray-100 cursor-pointer"
+                onClick={() => handleJobClick(job)}
+              >
+                <span className="font-medium text-gray-700">{job.name}</span> -{" "}
+                {job.date}
+              </li>
+            ))}
+          </ul>
         )}
-
-        {error && (
-          <div className="mt-4 text-red-500 text-sm">
-            <p>{error}</p>
-          </div>
-        )}
-
-        <button
-          onClick={handleCSVImport}
-          disabled={loading || !file}
-          className={`${
-            loading || !file
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-green-500 hover:bg-green-600"
-          } text-white px-4 py-3 mt-6 rounded-md transition duration-200 w-full`}
-        >
-          {loading ? "Importing..." : "Import CSV"}
-        </button>
-
-        {/* Button to download the data as CSV */}
-        <button
-          onClick={handleCSVDownload}
-          disabled={loading}
-          className={`${
-            loading
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-blue-500 hover:bg-blue-600"
-          } text-white px-4 py-3 mt-4 rounded-md transition duration-200 w-full`}
-        >
-          {loading ? "Downloading..." : "Download CSV"}
-        </button>
+        
+        <div className="mt-6 space-y-4">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-purple-500 text-white px-4 py-3 rounded-md hover:bg-purple-600 transition duration-200 w-full"
+          >
+            Add Job Manually
+          </button>
+        </div>
       </div>
+
+      {/* Search Result Modal */}
+      {isSearchModalOpen && selectedJob && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay"
+          onClick={handleClickOutside}
+        >
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto">
+            <h3 className="font-bold text-lg text-gray-700 mb-4">
+              Edit Job Details
+            </h3>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <input
+                {...register("name", { required: true })}
+                placeholder="Name"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("email", { required: true })}
+                placeholder="Email"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("phone", { required: true })}
+                placeholder="Phone"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("address", { required: true })}
+                placeholder="Address"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("date", { required: true })}
+                type="date"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("price", { required: true })}
+                placeholder="Price"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <textarea
+                {...register("info", { required: true })}
+                placeholder="Info"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsSearchModalOpen(false)}
+                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
+                >
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Job Modal */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay"
+          onClick={handleClickOutside}
+        >
+          <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg max-h-screen overflow-y-auto">
+            <h3 className="font-bold text-lg text-gray-700 mb-4">
+              Add New Job
+            </h3>
+            <form onSubmit={handleSubmit(/* Add your add job handler here */)} className="space-y-4">
+              <input
+                {...register("name", { required: true })}
+                placeholder="Name"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("email", { required: false })}
+                placeholder="Email"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("phone", { required: true })}
+                placeholder="Phone"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("address", { required: true })}
+                placeholder="Address"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("date", { required: true })}
+                type="date"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                {...register("price", { required: true })}
+                placeholder="Price"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <textarea
+                {...register("info", { required: true })}
+                placeholder="Info"
+                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
+                >
+                  Add Job
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
