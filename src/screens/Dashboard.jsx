@@ -137,14 +137,12 @@ const Dashboard = () => {
   const tileClassName = ({ date }) => {
     const dateString = date.toDateString();
     if (jobDates.includes(dateString)) {
-      // Highlight dates with jobs
       return "bg-blue-200 text-blue-900 font-bold border-2 border-blue-400 rounded-full";
     }
     if (blockedDays.includes(dateString)) {
-      // Blocked days styling
       return "bg-red-200 text-red-800 line-through";
     }
-    return null; // Default styling
+    return null;
   };
 
   const tileContent = ({ date }) => {
@@ -211,11 +209,13 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center sm:text-left">
+        <div className="mb-6 flex flex-col space-y-4">
+          {/* Header */}
+          <h1 className="text-3xl font-bold text-gray-800 text-center sm:text-left">
             Dashboard
           </h1>
-          <div className="relative">
+          {/* Search Bar */}
+          <div className="relative w-full">
             <select
               className="w-full appearance-none bg-white border border-gray-300 rounded-lg p-3 pl-4 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
               onChange={(e) => {
