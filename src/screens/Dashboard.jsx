@@ -31,8 +31,12 @@ const Dashboard = () => {
         id: doc.id,
         ...doc.data(),
       }));
-      const jobsWithDate = jobList.filter(job => job.date && job.date.trim() !== "");
-      const jobsWithoutDate = jobList.filter(job => !job.date || job.date.trim() === "");
+      const jobsWithDate = jobList.filter(
+        (job) => job.date && job.date.trim() !== ""
+      );
+      const jobsWithoutDate = jobList.filter(
+        (job) => !job.date || job.date.trim() === ""
+      );
       setJobs(jobsWithDate);
       setUndatedJobs(jobsWithoutDate);
     } catch (error) {
@@ -133,10 +137,27 @@ const Dashboard = () => {
   const tileClassName = ({ date }) => {
     const dateString = date.toDateString();
     if (jobDates.includes(dateString)) {
-      return "bg-blue-100 text-blue-800 font-semibold";
+      // Highlight dates with jobs
+      return "bg-blue-200 text-blue-900 font-bold border-2 border-blue-400 rounded-full";
     }
     if (blockedDays.includes(dateString)) {
+      // Blocked days styling
       return "bg-red-200 text-red-800 line-through";
+    }
+    return null; // Default styling
+  };
+
+  const tileContent = ({ date }) => {
+    const dateString = date.toDateString();
+    if (jobDates.includes(dateString)) {
+      return (
+        <div className="flex justify-center">
+          <span className="w-2 h-2 bg-blue-600 rounded-full mt-1"></span>
+        </div>
+      );
+    }
+    if (blockedDays.includes(dateString)) {
+      return <span className="text-xs">🚫</span>;
     }
     return null;
   };
@@ -199,7 +220,7 @@ const Dashboard = () => {
               className="w-full appearance-none bg-white border border-gray-300 rounded-lg p-3 pl-4 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
               onChange={(e) => {
                 if (e.target.value) {
-                  const job = undatedJobs.find(job => job.id === e.target.value);
+                  const job = undatedJobs.find((job) => job.id === e.target.value);
                   handleJobClick(job);
                   e.target.value = "";
                 }
@@ -229,16 +250,10 @@ const Dashboard = () => {
                 onChange={setDate}
                 value={date}
                 tileClassName={tileClassName}
+                tileContent={tileContent}
                 tileDisabled={tileDisabled}
                 onClickDay={toggleBlockDay}
                 className="w-full border-none mx-auto"
-                tileContent={({ date }) => {
-                  const dateString = date.toDateString();
-                  if (blockedDays.includes(dateString)) {
-                    return <span className="text-xs">🚫</span>;
-                  }
-                  return null;
-                }}
               />
             </div>
           </div>
@@ -275,7 +290,9 @@ const Dashboard = () => {
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500 italic">No jobs scheduled for this date.</p>
+              <p className="text-gray-500 italic">
+                No jobs scheduled for this date.
+              </p>
             )}
           </div>
         </div>
@@ -287,11 +304,22 @@ const Dashboard = () => {
                 Job Details
               </h2>
               <div className="space-y-3 text-gray-700">
-                <p><strong>Name:</strong> {selectedJob.name || "N/A"}</p>
-                <p><strong>Date:</strong> {selectedJob.date || "Not scheduled"}</p>
-                <p><strong>Email:</strong> {selectedJob.email || "N/A"}</p>
-                <p><strong>Phone:</strong> {selectedJob.phone || "N/A"}</p>
-                <p><strong>Address:</strong> {selectedJob.address || "N/A"}</p>
+                <p>
+                  <strong>Name:</strong> {selectedJob.name || "N/A"}
+                </p>
+                <p>
+                  <strong>Date:</strong>{" "}
+                  {selectedJob.date || "Not scheduled"}
+                </p>
+                <p>
+                  <strong>Email:</strong> {selectedJob.email || "N/A"}
+                </p>
+                <p>
+                  <strong>Phone:</strong> {selectedJob.phone || "N/A"}
+                </p>
+                <p>
+                  <strong>Address:</strong> {selectedJob.address || "N/A"}
+                </p>
                 {selectedJob.address && (
                   <button
                     onClick={() => openInGoogleMaps(selectedJob.address)}
@@ -301,10 +329,18 @@ const Dashboard = () => {
                     View in Google Maps
                   </button>
                 )}
-                <p><strong>Info:</strong> {selectedJob.info || "N/A"}</p>
+                <p>
+                  <strong>Info:</strong> {selectedJob.info || "N/A"}
+                </p>
                 <p>
                   <strong>Status:</strong>{" "}
-                  <span className={selectedJob.completed ? "text-green-600" : "text-yellow-600"}>
+                  <span
+                    className={
+                      selectedJob.completed
+                        ? "text-green-600"
+                        : "text-yellow-600"
+                    }
+                  >
                     {selectedJob.completed ? "Completed" : "Pending"}
                   </span>
                 </p>
