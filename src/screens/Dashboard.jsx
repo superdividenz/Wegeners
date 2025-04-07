@@ -133,32 +133,52 @@ const Dashboard = () => {
       return false;
     });
   };
-
-  const tileClassName = ({ date }) => {
+  
+  const getJobCountForDate = (date) => {
     const dateString = date.toDateString();
-    if (jobDates.includes(dateString)) {
-      return "bg-blue-200 text-blue-900 font-bold border-2 border-blue-400 rounded-full";
+    return jobs.filter((job) => {
+      if (job.date) {
+        const [month, day, year] = job.date.split("/");
+        const jobDate = new Date(year, month - 1, day).toDateString();
+        return jobDate === dateString;
+      }
+      return false;
+    }).length;
+  };
+  
+  const tileClassName = ({ date, view }) => {
+    const dateString = date.toDateString();
+    const isJobDay = jobDates.includes(dateString);
+    const isBlockedDay = blockedDays.includes(dateString);
+  
+    if (view !== "month") return null; // Avoid styling on year/decade views
+  
+    if (isJobDay) {
+      const jobCount = getJobCountForDate(date);
+      const intensity = Math.min(jobCount * 100, 600); // scale intensity
+      return `relative bg-blue-${intensity} text-blue-900 font-bold border-2 border-blue-700 rounded-full animate-pulse hover:scale-105 transition-transform duration-200`;
     }
-    if (blockedDays.includes(dateString)) {
-      return "bg-red-200 text-red-800 line-through";
+  
+    if (isBlockedDay) {
+      return "relative bg-red-400 text-red-900 font-bold border border-red-700 rounded-full after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-red-900 after:top-1/2 after:left-0 after:transform after:-translate-y-1/2";
     }
+    
     return null;
   };
-
-  const tileContent = ({ date }) => {
+  
+  const tileContent = ({ date, view }) => {
     const dateString = date.toDateString();
-    if (jobDates.includes(dateString)) {
+    if (view === "month" && jobDates.includes(dateString)) {
+      const jobCount = getJobCountForDate(date);
       return (
-        <div className="flex justify-center">
-          <span className="w-2 h-2 bg-blue-600 rounded-full mt-1"></span>
+        <div className="absolute top-0 right-0 text-xs bg-blue-900 text-white px-1 rounded-bl">
+          {jobCount}
         </div>
       );
     }
-    if (blockedDays.includes(dateString)) {
-      return <span className="text-xs">🚫</span>;
-    }
     return null;
   };
+  
 
   const tileDisabled = ({ date }) => false;
 
