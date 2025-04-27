@@ -1,6 +1,49 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { getFirestore, collection, getDocs, query, where, updateDoc, doc } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  updateDoc,
+  doc,
+  addDoc,
+  deleteDoc, // ✅ Added deleteDoc
+} from "firebase/firestore";
+
+// Success Modal Component
+const SuccessModal = ({ message, onClose }) => (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
+    <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full animate-fadeIn">
+      <div className="flex justify-center mb-4">
+        <div className="bg-green-100 rounded-full p-4">
+          <svg
+            className="h-10 w-10 text-green-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+      </div>
+      <h2 className="text-2xl font-bold text-green-600 mb-2">Success!</h2>
+      <p className="text-gray-600 mb-6">{message}</p>
+      <button
+        onClick={onClose}
+        className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-full transition duration-300"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+);
 
 const AddData = () => {
   const { register, handleSubmit, setValue, reset } = useForm();
@@ -9,14 +52,16 @@ const AddData = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(""); // new
 
-  // Handle search input to filter jobs
+  const db = getFirestore();
+
+  // Search jobs
   const handleSearch = async (e) => {
     const input = e.target.value;
     setSearchLastName(input);
 
     if (input.length > 0) {
-      const db = getFirestore();
       const jobsRef = collection(db, "jobs");
       const q = query(
         jobsRef,
@@ -34,7 +79,7 @@ const AddData = () => {
     }
   };
 
-  // Handle job selection from search
+  // Select job to edit
   const handleJobClick = (job) => {
     setSelectedJob(job);
     setIsSearchModalOpen(true);
@@ -43,7 +88,7 @@ const AddData = () => {
     });
   };
 
-  // Format date functions
+  // Format dates
   const formatDateForInput = (dateStr) => {
     if (!dateStr || !dateStr.includes("/")) return dateStr;
     const [month, day, year] = dateStr.split("/");
@@ -56,36 +101,75 @@ const AddData = () => {
     return `${month}/${day}/${year}`;
   };
 
-  // Handle update submission
-  const onSubmit = async (data) => {
+  // Update existing job
+  const onUpdateJob = async (data) => {
     if (!selectedJob) return;
 
-    const db = getFirestore();
-    const jobDocRef = doc(db, "jobs", selectedJob.id);
-
     try {
+      const jobDocRef = doc(db, "jobs", selectedJob.id);
       const updatedData = {
         ...data,
         date: formatDateForStorage(data.date),
         completed: selectedJob.completed || false,
       };
       await updateDoc(jobDocRef, updatedData);
-      alert("Job updated successfully");
-      setIsSearchModalOpen(false);
-      reset();
-      setSelectedJob(null);
-      setMatchingJobs([]);
-      setSearchLastName("");
+      setSuccessMessage("Job updated successfully!");
+      resetAll();
     } catch (error) {
       console.error("Error updating job: ", error);
     }
   };
 
-  // Handle modal closing
+  // Add new job
+  const onAddJob = async (data) => {
+    try {
+      const jobsRef = collection(db, "jobs");
+      const newJob = {
+        ...data,
+        date: formatDateForStorage(data.date),
+        completed: false,
+      };
+      await addDoc(jobsRef, newJob);
+      setSuccessMessage("Job added successfully!");
+      resetAll();
+    } catch (error) {
+      console.error("Error adding job: ", error);
+    }
+  };
+
+  // Delete job
+  const onDeleteJob = async () => {
+    if (!selectedJob) return;
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this job?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const jobDocRef = doc(db, "jobs", selectedJob.id);
+      await deleteDoc(jobDocRef);
+      setSuccessMessage("Job deleted successfully!");
+      resetAll();
+    } catch (error) {
+      console.error("Error deleting job: ", error);
+      alert("Failed to delete job");
+    }
+  };
+
+  const resetAll = () => {
+    setIsModalOpen(false);
+    setIsSearchModalOpen(false);
+    reset();
+    setSelectedJob(null);
+    setMatchingJobs([]);
+    setSearchLastName("");
+  };
+
+  // Close modals when clicking outside
   const handleClickOutside = (event) => {
     if (event.target.classList.contains("modal-overlay")) {
-      setIsModalOpen(false);
-      setIsSearchModalOpen(false);
+      resetAll();
     }
   };
 
@@ -117,7 +201,7 @@ const AddData = () => {
             ))}
           </ul>
         )}
-        
+
         <div className="mt-6 space-y-4">
           <button
             onClick={() => setIsModalOpen(true)}
@@ -128,7 +212,7 @@ const AddData = () => {
         </div>
       </div>
 
-      {/* Search Result Modal */}
+      {/* Modal for Editing Job */}
       {isSearchModalOpen && selectedJob && (
         <div
           className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay"
@@ -138,63 +222,19 @@ const AddData = () => {
             <h3 className="font-bold text-lg text-gray-700 mb-4">
               Edit Job Details
             </h3>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <input
-                {...register("name", { required: true })}
-                placeholder="Name"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <form onSubmit={handleSubmit(onUpdateJob)} className="space-y-4">
+              <FormFields register={register} />
+              <FormButtons
+                onCancel={() => setIsSearchModalOpen(false)}
+                onDelete={onDeleteJob} // pass delete here
+                submitLabel="Update"
               />
-              <input
-                {...register("email", { required: true })}
-                placeholder="Email"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("phone", { required: true })}
-                placeholder="Phone"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("address", { required: true })}
-                placeholder="Address"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("date", { required: true })}
-                type="date"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("price", { required: true })}
-                placeholder="Price"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <textarea
-                {...register("info", { required: true })}
-                placeholder="Info"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setIsSearchModalOpen(false)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
-                >
-                  Update
-                </button>
-              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Add Job Modal */}
+      {/* Modal for Adding Job */}
       {isModalOpen && (
         <div
           className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center modal-overlay"
@@ -204,63 +244,97 @@ const AddData = () => {
             <h3 className="font-bold text-lg text-gray-700 mb-4">
               Add New Job
             </h3>
-            <form onSubmit={handleSubmit(/* Add your add job handler here */)} className="space-y-4">
-              <input
-                {...register("name", { required: true })}
-                placeholder="Name"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <form onSubmit={handleSubmit(onAddJob)} className="space-y-4">
+              <FormFields register={register} />
+              <FormButtons
+                onCancel={() => setIsModalOpen(false)}
+                submitLabel="Add Job"
               />
-              <input
-                {...register("email", { required: false })}
-                placeholder="Email"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("phone", { required: true })}
-                placeholder="Phone"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("address", { required: true })}
-                placeholder="Address"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("date", { required: true })}
-                type="date"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                {...register("price", { required: true })}
-                placeholder="Price"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <textarea
-                {...register("info", { required: true })}
-                placeholder="Info"
-                className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
-                >
-                  Add Job
-                </button>
-              </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Success Modal */}
+      {successMessage && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => setSuccessMessage("")}
+        />
+      )}
     </div>
   );
 };
+
+// Reusable form fields
+const FormFields = ({ register }) => (
+  <>
+    <input
+      {...register("name", { required: true })}
+      placeholder="Name"
+      className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+    <input
+      {...register("email", { required: false })}
+      placeholder="Email"
+      className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+    <input
+      {...register("phone", { required: true })}
+      placeholder="Phone"
+      className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+    <input
+      {...register("address", { required: true })}
+      placeholder="Address"
+      className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+    <input
+      {...register("date", { required: true })}
+      type="date"
+      className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+    <input
+      {...register("price", { required: true })}
+      placeholder="Price"
+      className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+    <textarea
+      {...register("info", { required: true })}
+      placeholder="Info"
+      className="border border-gray-300 p-3 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+  </>
+);
+
+// Reusable buttons
+const FormButtons = ({ onCancel, onDelete, submitLabel }) => (
+  <div className="flex justify-between space-x-4">
+    <button
+      type="button"
+      onClick={onCancel}
+      className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition duration-200"
+    >
+      Cancel
+    </button>
+
+    {onDelete && (
+      <button
+        type="button"
+        onClick={onDelete}
+        className="bg-yellow-500 text-white px-4 py-2 rounded-md hover:bg-yellow-600 transition duration-200"
+      >
+        Delete
+      </button>
+    )}
+
+    <button
+      type="submit"
+      className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-200"
+    >
+      {submitLabel}
+    </button>
+  </div>
+);
 
 export default AddData;
