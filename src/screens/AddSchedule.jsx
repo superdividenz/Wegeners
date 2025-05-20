@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { db } from "../firebase/firebase";
 import { collection, addDoc } from "firebase/firestore";
+import { format } from "date-fns";
+import { db } from "../firebase/firebase";
 
-const AddSchedule = () => {
+const AddJobForm = () => {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -38,8 +39,27 @@ const AddSchedule = () => {
     setError(null);
 
     try {
-      const appointmentsCollection = collection(db, "appointments");
-      await addDoc(appointmentsCollection, formData);
+      const jobsCollection = collection(db, "jobs");
+
+      const [year, month, day] = formData.scheduledDate.split("-");
+      const localDate = new Date(year, month - 1, day);
+
+      const formattedData = {
+        date: formData.scheduledDate
+          ? format(localDate, "MM/dd/yyyy")
+          : "",
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        email: formData.email,
+        info: formData.additionalInfo,
+        services: formData.services,
+        price: 0,
+        timestamp: new Date().toISOString(),
+      };
+
+
+      await addDoc(jobsCollection, formattedData);
 
       setShowModal(true);
       setFormData({
@@ -54,8 +74,8 @@ const AddSchedule = () => {
 
       setTimeout(() => setShowModal(false), 3000);
     } catch (err) {
-      console.error("Error scheduling:", err);
-      setError("Failed to schedule. Please try again.");
+      console.error("Error submitting job:", err);
+      setError("Failed to submit. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -63,9 +83,7 @@ const AddSchedule = () => {
 
   return (
     <div className="max-w-sm mx-auto mt-4 p-4 bg-white shadow-lg rounded-lg md:max-w-md">
-      <h2 className="text-xl font-bold mb-3 text-center">
-        Schedule Sealing Service
-      </h2>
+      <h2 className="text-xl font-bold mb-3 text-center">Wegeners Sealing Entry</h2>
       {error && <p className="text-red-500 text-center">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -105,18 +123,14 @@ const AddSchedule = () => {
           required
           className="w-full px-4 py-2 border rounded-md text-lg"
         />
-
-        {/* Date & Time Picker */}
         <input
           type="date"
           name="scheduledDate"
           value={formData.scheduledDate}
           onChange={handleChange}
-          required
           className="w-full px-4 py-2 border rounded-md text-lg"
         />
 
-        {/* Multi-Select Services */}
         <div className="w-full px-4 py-3 border rounded-md bg-gray-50">
           <p className="font-semibold mb-2">Select Services:</p>
           <div className="grid grid-cols-2 gap-2">
@@ -135,7 +149,6 @@ const AddSchedule = () => {
           </div>
         </div>
 
-        {/* Additional Info */}
         <textarea
           name="additionalInfo"
           placeholder="Additional details (optional)"
@@ -150,11 +163,11 @@ const AddSchedule = () => {
           className="w-full bg-black text-white py-3 rounded-md text-lg hover:bg-gray-800"
           disabled={loading}
         >
-          {loading ? "Submitting..." : "Schedule Now"}
+          {loading ? "Submitting..." : "Submit Job"}
         </button>
       </form>
 
-      {/* Confirmation Modal */}
+      {/* Success Modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -164,9 +177,9 @@ const AddSchedule = () => {
             className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50"
           >
             <motion.div className="bg-white p-6 rounded-lg shadow-lg text-center w-80">
-              <h3 className="text-lg font-bold mb-2">Scheduled! 📅</h3>
+              <h3 className="text-lg font-bold mb-2">Submitted! ✅</h3>
               <p className="text-gray-600">
-                Your service has been scheduled successfully.
+                Job information successfully added to Firestore.
               </p>
               <button
                 onClick={() => setShowModal(false)}
@@ -182,4 +195,4 @@ const AddSchedule = () => {
   );
 };
 
-export default AddSchedule;
+export default AddJobForm;
