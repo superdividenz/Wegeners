@@ -5,7 +5,7 @@ import Management from "./screens/Management";
 import Dashboard from "./screens/Dashboard";
 import Login from "./screens/Login";
 import Customer from "./screens/Customer";
-import AddBid from "./screens/AddBid";
+import AddBid from "./screens/AddSchedule";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
