@@ -32,25 +32,48 @@ const Header = () => {
       {currentUser ? (
         <>
           <li>
-            <NavLink to="/management">Management</NavLink>
+            <NavLink
+              to="/management"
+              className="transition-transform duration-300 hover:scale-110"
+            >
+              Management
+            </NavLink>
           </li>
           <li>
-            <NavLink to="/dashboard">Dashboard</NavLink>
+            <NavLink
+              to="/dashboard"
+              className="transition-transform duration-300 hover:scale-110"
+            >
+              Dashboard
+            </NavLink>
           </li>
           <li>
-            <NavLink to="/customer">Customer</NavLink>
+            <NavLink
+              to="/customer"
+              className="transition-transform duration-300 hover:scale-110"
+            >
+              Customer
+            </NavLink>
           </li>
           <li>
-            <button onClick={handleLogout}>Logout</button>
+            <button onClick={handleLogout} className="transition-transform duration-300 hover:scale-110">
+              Logout
+            </button>
           </li>
         </>
       ) : (
         <li>
-          <NavLink to="/login">Login</NavLink>
+          <NavLink
+            to="/login"
+            className="transition-transform duration-300 hover:scale-110"
+          >
+            Login
+          </NavLink>
         </li>
       )}
     </>
   );
+  
 
   return (
     <header className="bg-gradient-to-r from-black to-gray-800 text-white shadow-lg sticky top-0">
