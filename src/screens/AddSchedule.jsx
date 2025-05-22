@@ -125,13 +125,23 @@ const AddJobForm = () => {
             required
             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none"
           />
-          <input
-            type="date"
-            name="scheduledDate"
-            value={formData.scheduledDate}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-400 focus:outline-none"
-          />
+         <div className="w-full max-w-md mx-auto text-center">
+  <label
+    htmlFor="scheduledDate"
+    className="block mb-2 text-gray-700 text-base font-medium"
+  >
+    Select a date you would like to seal
+  </label>
+  <input
+    id="scheduledDate"
+    type="date"
+    name="scheduledDate"
+    value={formData.scheduledDate}
+    onChange={handleChange}
+    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+  />
+</div>
+
 
           <div className="w-full px-4 py-4 border border-gray-200 bg-gray-50 rounded-md">
             <p className="font-semibold mb-3 text-gray-700">Select Services:</p>
