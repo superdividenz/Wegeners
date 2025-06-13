@@ -15,11 +15,11 @@ import {
 // Success Modal Component
 const SuccessModal = ({ message, onClose }) => (
   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50">
-    <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full animate-fadeIn">
+    <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full animate-fadeIn">
       <div className="flex justify-center mb-4">
-        <div className="bg-green-100 rounded-full p-4">
+        <div className="bg-gray-700 rounded-full p-4">
           <svg
-            className="h-10 w-10 text-green-600"
+            className="h-10 w-10 text-gray-300"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -33,11 +33,11 @@ const SuccessModal = ({ message, onClose }) => (
           </svg>
         </div>
       </div>
-      <h2 className="text-2xl font-bold text-green-600 mb-2">Success!</h2>
-      <p className="text-gray-600 mb-6">{message}</p>
+      <h2 className="text-2xl font-bold text-gray-200 mb-2">Success!</h2>
+      <p className="text-gray-200 mb-6">{message}</p>
       <button
         onClick={onClose}
-        className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-full transition duration-300"
+        className="bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-6 rounded-full transition duration-300"
       >
         Close
       </button>
