@@ -59,11 +59,24 @@ const SubcontractorForm = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
-      <div className="bg-white p-6 rounded-xl shadow-xl">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
-          Subcontractors
-        </h2>
+  <div className="max-w-xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
+    <div className="bg-white p-6 rounded-xl shadow-xl">
+      <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
+        Subcontractors
+      </h2>
+
+      {/* Professional introduction */}
+      <p className="text-gray-700 text-center mb-6 text-sm sm:text-base leading-relaxed">
+        <p className="text-gray-700 font-medium mb-6 text-base sm:text-lg leading-relaxed">
+            <span className="block font-semibold text-xl text-black mb-2">
+                Join Our Team of Trusted Professionals
+            </span>
+        We are actively seeking experienced, reliable subcontractors who take pride in their craftsmanship 
+        and professionalism. If you're committed to quality work and dependable service.  Ideal candidates should have a proven track record in their trade and possess the necessary equipment 
+        to complete high-quality sealing work. Please fill out the application below, and we will review your submission promptly.
+        </p>
+        
+      </p>
         {error && <p className="text-red-500 text-center mb-3">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-5">
