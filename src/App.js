@@ -6,6 +6,7 @@ import Dashboard from "./screens/Dashboard";
 import Login from "./screens/Login";
 import Customer from "./screens/Customer";
 import AddBid from "./screens/AddSchedule";
+import SubcontractorForm from "./screens/Subs"; // ✅ new import
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -18,6 +19,7 @@ const App = () => {
           <Route path="/" element={<AddBid />} />
           <Route path="/add-bid" element={<AddBid />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/subcontractor" element={<SubcontractorForm />} /> {/* ✅ new route */}
 
           <Route
             path="/management"

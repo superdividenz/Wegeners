@@ -6,6 +6,7 @@ import JobModal from "./Addon/JobModal";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import InvoicePDF from "./Addon/InvoicePDF";
 import ReportGenerator from "./Addon/ReportGenerator";
+import SubcontractorTable from "./Addon/SubcontractorTable";
 import { useForm } from "react-hook-form";
 
 const Management = () => {
@@ -169,6 +170,9 @@ const Management = () => {
             ))}
           </div>
         )}
+
+        {/* === Add Subcontractor Table here === */}
+        <SubcontractorTable />
 
         {/* Edit Modal */}
         {isModalOpen && selectedJob && (

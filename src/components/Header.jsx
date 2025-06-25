@@ -28,51 +28,47 @@ const Header = () => {
   };
 
   const NavLinks = () => (
-    <>
-      {currentUser ? (
-        <>
-          <li>
-            <NavLink
-              to="/management"
-              className="transition-transform duration-300 hover:scale-110"
-            >
-              Management
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/dashboard"
-              className="transition-transform duration-300 hover:scale-110"
-            >
-              Dashboard
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/customer"
-              className="transition-transform duration-300 hover:scale-110"
-            >
-              Customer
-            </NavLink>
-          </li>
-          <li>
-            <button onClick={handleLogout} className="transition-transform duration-300 hover:scale-110">
-              Logout
-            </button>
-          </li>
-        </>
-      ) : (
+  <>
+    <li>
+      <NavLink
+        to="/subcontractor"
+        className="transition-transform duration-300 hover:scale-110"
+      >
+        Subcontractor
+      </NavLink>
+    </li>
+    {currentUser ? (
+      <>
         <li>
-          <NavLink
-            to="/login"
-            className="transition-transform duration-300 hover:scale-110"
-          >
-            Login
+          <NavLink to="/management" className="transition-transform duration-300 hover:scale-110">
+            Management
           </NavLink>
         </li>
-      )}
-    </>
-  );
+        <li>
+          <NavLink to="/dashboard" className="transition-transform duration-300 hover:scale-110">
+            Dashboard
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/customer" className="transition-transform duration-300 hover:scale-110">
+            Customer
+          </NavLink>
+        </li>
+        <li>
+          <button onClick={handleLogout} className="transition-transform duration-300 hover:scale-110">
+            Logout
+          </button>
+        </li>
+      </>
+    ) : (
+      <li>
+        <NavLink to="/login" className="transition-transform duration-300 hover:scale-110">
+          Login
+        </NavLink>
+      </li>
+    )}
+  </>
+);
   
 
   return (
