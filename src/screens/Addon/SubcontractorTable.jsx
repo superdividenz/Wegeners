@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
+import ConfirmModal from "../Addon/ConfirmModal"; // Adjust path if needed
 
 const SubcontractorTable = () => {
   const [subcontractors, setSubcontractors] = useState([]);
+  const [selectedSubId, setSelectedSubId] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     const fetchSubcontractors = async () => {
       try {
         const snapshot = await getDocs(collection(db, "subcontractors"));
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setSubcontractors(data);
       } catch (error) {
         console.error("Error fetching subcontractors:", error);
@@ -18,21 +21,28 @@ const SubcontractorTable = () => {
     fetchSubcontractors();
   }, []);
 
+  const handleDelete = async () => {
+    try {
+      await deleteDoc(doc(db, "subcontractors", selectedSubId));
+      setSubcontractors((prev) => prev.filter((sub) => sub.id !== selectedSubId));
+      setSelectedSubId(null);
+      setShowConfirm(false);
+    } catch (error) {
+      console.error("Error deleting subcontractor:", error);
+    }
+  };
+
+  const openConfirm = (id) => {
+    setSelectedSubId(id);
+    setShowConfirm(true);
+  };
+
   const downloadCSV = () => {
     const headers = [
-      "Company Name",
-      "Contact Name",
-      "Phone",
-      "Email",
-      "Location",
-      "Experience",
-      "Equipment",
-      "Insurance",
-      "Additional Info",
-      "Timestamp",
+      "Company Name", "Contact Name", "Phone", "Email", "Location",
+      "Experience", "Equipment", "Insurance", "Additional Info", "Timestamp"
     ];
-
-    const rows = subcontractors.map(sub => [
+    const rows = subcontractors.map((sub) => [
       sub.companyName,
       sub.contactName,
       sub.phone,
@@ -44,11 +54,9 @@ const SubcontractorTable = () => {
       sub.additionalInfo,
       sub.timestamp,
     ]);
-
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map(r => r.map(val => `"${val || ""}"`).join(","))].join("\n");
-
+      [headers.join(","), ...rows.map((r) => r.map((val) => `"${val || ""}"`).join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.href = encodedUri;
@@ -85,12 +93,10 @@ const SubcontractorTable = () => {
                 <th className="px-4 py-2">Contact</th>
                 <th className="px-4 py-2">Phone</th>
                 <th className="px-4 py-2">Email</th>
-                <th className="px-4 py-2">Location</th>
-                <th className="px-4 py-2">Experience</th>
-                <th className="px-4 py-2">Equipment</th>
                 <th className="px-4 py-2">Insurance</th>
                 <th className="px-4 py-2">Additional</th>
                 <th className="px-4 py-2">Submitted</th>
+                <th className="px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -100,18 +106,34 @@ const SubcontractorTable = () => {
                   <td className="px-4 py-2">{sub.contactName}</td>
                   <td className="px-4 py-2">{sub.phone}</td>
                   <td className="px-4 py-2">{sub.email}</td>
-                  <td className="px-4 py-2">{sub.location}</td>
-                  <td className="px-4 py-2">{sub.experience}</td>
-                  <td className="px-4 py-2">{sub.equipment}</td>
                   <td className="px-4 py-2">{sub.insurance}</td>
                   <td className="px-4 py-2">{sub.additionalInfo}</td>
-                  <td className="px-4 py-2">{new Date(sub.timestamp).toLocaleString()}</td>
+                  <td className="px-4 py-2">
+                    {sub.timestamp
+                      ? new Date(sub.timestamp).toLocaleString()
+                      : "N/A"}
+                  </td>
+                  <td className="px-4 py-2 text-center">
+                    <button
+                      onClick={() => openConfirm(sub.id)}
+                      className="text-red-600 hover:text-red-800 font-semibold"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <ConfirmModal
+        show={showConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 };
