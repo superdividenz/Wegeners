@@ -9,6 +9,7 @@ const JobModal = ({ job, onClose, onDownload, downloadedJobs }) => {
   return (
     <Modal onClose={onClose}>
       <div className="bg-white p-6 rounded-lg">
+        
         <h2 className="text-2xl font-bold mb-4">{job.name}</h2>
         <div className="grid grid-cols-2 gap-4 mb-6">
           <p>

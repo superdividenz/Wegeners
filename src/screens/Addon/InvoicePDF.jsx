@@ -5,58 +5,43 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
   Image,
 } from "@react-pdf/renderer";
 
-// Register fonts for a professional look
-Font.register({
-  family: "Roboto",
-  fonts: [
-    { src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf", fontWeight: 300 },
-    { src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf", fontWeight: 400 },
-    { src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf", fontWeight: 700 },
-  ],
-});
-
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#ffffff",
+    fontFamily: "Helvetica",
+    fontSize: 12,
     padding: 40,
-    fontFamily: "Roboto",
-    fontSize: 11,
-    color: "#333333",
+    color: "#333",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: 30,
-    borderBottom: "1 solid #e0e0e0",
-    paddingBottom: 15,
   },
   companyDetails: {
-    flex: 1,
+    flexDirection: "column",
   },
   companyName: {
     fontSize: 22,
-    fontWeight: 700,
+    fontWeight: "bold",
     color: "#1a73e8",
-    marginBottom: 5,
   },
   companyInfo: {
-    fontSize: 10,
-    color: "#666666",
-    lineHeight: 1.5,
+    fontSize: 12,
+    color: "#555",
+    marginTop: 2,
   },
   logo: {
-    width: 70,
-    height: 70,
+    width: 100,
+    height: 50,
+    objectFit: "contain",
   },
   invoiceTitle: {
     fontSize: 24,
-    fontWeight: 700,
-    color: "#333333",
+    fontWeight: "bold",
+    color: "#333",
     textAlign: "right",
     marginBottom: 20,
   },
@@ -65,52 +50,42 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: "#f9fafb",
     borderRadius: 8,
-    border: "1 solid #e0e0e0",
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: 700,
+    fontWeight: "bold",
     color: "#1a73e8",
     marginBottom: 10,
-    borderBottom: "1 solid #e0e0e0",
-    paddingBottom: 5,
   },
   table: {
-    display: "flex",
-    flexDirection: "column",
+    // Optional container for table rows if needed
   },
   tableRow: {
     flexDirection: "row",
     paddingVertical: 8,
-    borderBottom: "0.5 solid #e0e0e0",
   },
   tableLabel: {
     width: "35%",
-    fontWeight: 700,
-    color: "#555555",
+    fontWeight: "bold",
+    color: "#555",
     paddingRight: 10,
   },
   tableValue: {
     width: "65%",
-    color: "#333333",
+    color: "#333",
   },
   totalRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    paddingVertical: 10,
-    marginTop: 10,
-    borderTop: "1 solid #e0e0e0",
+    marginTop: 20,
   },
   totalLabel: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#1a73e8",
-    marginRight: 15,
+    fontWeight: "bold",
+    fontSize: 14,
+    marginRight: 10,
   },
   totalValue: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#333333",
+    fontSize: 14,
   },
   footer: {
     position: "absolute",
@@ -119,16 +94,13 @@ const styles = StyleSheet.create({
     right: 40,
     textAlign: "center",
     fontSize: 9,
-    color: "#999999",
-    borderTop: "0.5 solid #e0e0e0",
-    paddingTop: 10,
+    color: "#999",
   },
   note: {
     marginTop: 20,
     fontSize: 10,
-    color: "#666666",
+    color: "#555",
     textAlign: "center",
-    fontStyle: "italic",
   },
 });
 
@@ -151,6 +123,7 @@ const InvoicePDF = ({ job = {}, companyInfo = {} }) => {
               {companyInfo.phone || "314-300-6562"}
             </Text>
           </View>
+
           {companyInfo.logoUrl && (
             <Image style={styles.logo} src={companyInfo.logoUrl} />
           )}
@@ -217,6 +190,7 @@ const InvoicePDF = ({ job = {}, companyInfo = {} }) => {
         <Text style={styles.footer}>
           © {new Date().getFullYear()} {companyInfo.name || "Wegener Asphalt"}. All rights reserved.
         </Text>
+
         <Text style={styles.note}>
           Thank you for your business! Please remit payment within 30 days.
         </Text>
