@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { FaMapMarkerAlt, FaArchive, FaEye } from 'react-icons/fa';
 import InvoicePDF from './InvoicePDF';
-import PDFPreviewModal from './PDFModal';
+import PDFPreviewModal from '../PDFModal';
 
 const JobCard = ({
   job,

@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-import Modal from "./Addon/Modal";
+import Modal from "./Addon/Management/Modal";
 import { FaMapMarkerAlt, FaChevronDown } from "react-icons/fa";
 
 const Dashboard = () => {

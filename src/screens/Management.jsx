@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase/firebase';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { useForm } from 'react-hook-form';
-import JobList from './Addon/JobList';
-import EditJobModal from './Addon/EditJobModal';
+import JobList from './Addon/Management/JobList';
+import EditJobModal from './Addon/Management/EditJobModal';
 import Notification from './Addon/Notification';
-import ReportGenerator from './Addon/ReportGenerator';
-import SubcontractorTable from './Addon/SubcontractorTable';
+import ReportGenerator from './Addon/Management/ReportGenerator';
+import SubcontractorTable from './Addon/Management/SubcontractorTable';
+
 
 const Management = () => {
   const [jobs, setJobs] = useState([]);

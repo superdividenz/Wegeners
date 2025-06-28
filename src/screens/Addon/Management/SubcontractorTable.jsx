@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
-import { db } from "../../firebase/firebase";
-import ConfirmModal from "../Addon/ConfirmModal"; // Adjust path if needed
+import { db } from './../../../firebase/firebase';
+import ConfirmModal from '../ConfirmModal';
+
 
 const SubcontractorTable = () => {
   const [subcontractors, setSubcontractors] = useState([]);
