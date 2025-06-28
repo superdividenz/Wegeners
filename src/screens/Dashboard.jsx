@@ -10,9 +10,11 @@ import {
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import Modal from "./Addon/Management/Modal";
+import { useAuth } from "../hooks/useAuth"; 
 import { FaMapMarkerAlt, FaChevronDown } from "react-icons/fa";
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,6 +25,48 @@ const Dashboard = () => {
   const [undatedJobs, setUndatedJobs] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+
+  const fetchJobs = useCallback(async () => {
+  setLoading(true);
+  try {
+    const jobsCollection = collection(db, "jobs");
+    const jobSnapshot = await getDocs(jobsCollection);
+    const jobListRaw = jobSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Fetch all users once
+    const usersCollection = collection(db, "users");
+    const userSnapshot = await getDocs(usersCollection);
+    const usersMap = {};
+    userSnapshot.docs.forEach((doc) => {
+      usersMap[doc.id] = doc.data().displayName || "Unknown";
+    });
+
+    // Attach claimerName to each job
+    const jobList = jobListRaw.map((job) => ({
+      ...job,
+      claimerName: job.claimedBy ? usersMap[job.claimedBy] || "Unknown" : null,
+    }));
+
+    const jobsWithDate = jobList.filter(
+      (job) => job.date && job.date.trim() !== ""
+    );
+    const jobsWithoutDate = jobList.filter(
+      (job) => !job.date || job.date.trim() === ""
+    );
+    setJobs(jobsWithDate);
+    setUndatedJobs(jobsWithoutDate);
+  } catch (error) {
+    console.error("Error fetching jobs:", error);
+    setError("Failed to load jobs. Please try again later.");
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
 
   // Success Modal Component
   const SuccessModal = ({ message, onClose }) => (
@@ -57,31 +101,31 @@ const Dashboard = () => {
     </div>
   );
 
-  const fetchJobs = useCallback(async () => {
-    setLoading(true);
-    try {
-      const jobsCollection = collection(db, "jobs");
-      const jobSnapshot = await getDocs(jobsCollection);
-      const jobList = jobSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      const jobsWithDate = jobList.filter(
-        (job) => job.date && job.date.trim() !== ""
-      );
-      const jobsWithoutDate = jobList.filter(
-        (job) => !job.date || job.date.trim() === ""
-      );
-      setJobs(jobsWithDate);
-      setUndatedJobs(jobsWithoutDate);
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-      setError("Failed to load jobs. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    const claimJob = async (jobId) => {
+  try {
+    const jobRef = doc(db, "jobs", jobId);
+    await updateDoc(jobRef, {
+      claimedBy: user.uid,
+      claimedAt: new Date().toISOString(),
+    });
 
+    // Update selectedJob state immediately with claimedBy info
+    setSelectedJob((prev) => ({
+      ...prev,
+      claimedBy: user.uid,
+      claimedAt: new Date().toISOString(),
+    }));
+
+    fetchJobs();
+    setSuccessMessage("Job claimed successfully!");
+    setShowSuccessModal(true);
+  } catch (error) {
+    console.error("Error claiming job:", error);
+    setSuccessMessage("Failed to claim job.");
+    setShowSuccessModal(true);
+  }
+};
+  
   const updateJobDate = async (jobId, newDate) => {
     try {
       const [year, month, day] = newDate.split("-");
@@ -381,109 +425,126 @@ const Dashboard = () => {
         )}
 
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          {selectedJob && (
-            <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full mx-4">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-                Job Details
-              </h2>
+        {selectedJob && (
+          <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
+              Job Details
+            </h2>
 
-              <div className="space-y-3 text-gray-700">
-                <p>
-                  <strong>Name:</strong> {selectedJob.name || "N/A"}
-                </p>
+          {/* Claim Job Button or Claimed Info */}
+      {!selectedJob.claimedBy ? (
+        <button
+          onClick={() => claimJob(selectedJob.id)}
+          className="w-full mb-4 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded-lg transition-all duration-200"
+        >
+          Claim this Job
+        </button>
+      ) : (
+        <p className="mb-4 text-sm text-gray-600">
+          Job claimed by:{" "}
+          <strong>
+            {selectedJob.claimedBy === user.uid
+              ? "You"
+              : selectedJob.claimerName || selectedJob.claimedBy}
+          </strong>
+        </p>
+      )}
 
-                <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Scheduled Date:
-                  </label>
-                  <input
-                    type="date"
-                    value={selectedJob.date || ""}
-                    onChange={(e) =>
-                      setSelectedJob({ ...selectedJob, date: e.target.value })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-blue-500"
-                  />
-                </div>
 
-                <p>
-                  <strong>Email:</strong> {selectedJob.email || "N/A"}
-                </p>
-                <p>
-                  <strong>Phone:</strong> {selectedJob.phone || "N/A"}
-                </p>
-                <p>
-                  <strong>Address:</strong> {selectedJob.address || "N/A"}
-                </p>
+      <div className="space-y-3 text-gray-700">
+        <p>
+          <strong>Name:</strong> {selectedJob.name || "N/A"}
+        </p>
 
-                {selectedJob.address && (
-                  <button
-                    onClick={() => openInGoogleMaps(selectedJob.address)}
-                    className="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
-                  >
-                    <FaMapMarkerAlt className="mr-2" />
-                    View in Google Maps
-                  </button>
-                )}
+        <div>
+          <label className="block text-sm font-semibold mb-1">
+            Scheduled Date:
+          </label>
+          <input
+            type="date"
+            value={selectedJob.date || ""}
+            onChange={(e) =>
+              setSelectedJob({ ...selectedJob, date: e.target.value })
+            }
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring focus:border-blue-500"
+          />
+        </div>
 
-                <p>
-                  <strong>Info:</strong> {selectedJob.info || "N/A"}
-                </p>
+        <p>
+          <strong>Email:</strong> {selectedJob.email || "N/A"}
+        </p>
+        <p>
+          <strong>Phone:</strong> {selectedJob.phone || "N/A"}
+        </p>
+        <p>
+          <strong>Address:</strong> {selectedJob.address || "N/A"}
+        </p>
 
-                <p>
-                  <strong>Status:</strong>{" "}
-                  <span
-                    className={
-                      selectedJob.completed
-                        ? "text-green-600"
-                        : "text-yellow-600"
-                    }
-                  >
-                    {selectedJob.completed ? "Completed" : "Pending"}
-                  </span>
-                </p>
-              </div>
+        {selectedJob.address && (
+          <button
+            onClick={() => openInGoogleMaps(selectedJob.address)}
+            className="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
+          >
+            <FaMapMarkerAlt className="mr-2" />
+            View in Google Maps
+          </button>
+        )}
 
-              <div className="mt-4">
-                <button
-                  onClick={() =>
-                    updateJobDate(selectedJob.id, selectedJob.date)
-                  }
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-200"
-                >
-                  Save Date
-                </button>
-              </div>
+        <p>
+          <strong>Info:</strong> {selectedJob.info || "N/A"}
+        </p>
 
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all duration-200"
-                >
-                  Close
-                </button>
+        <p>
+          <strong>Status:</strong>{" "}
+          <span
+            className={
+              selectedJob.completed ? "text-green-600" : "text-yellow-600"
+            }
+          >
+            {selectedJob.completed ? "Completed" : "Pending"}
+          </span>
+        </p>
+      </div>
 
-                {!selectedJob.completed && (
-                  <button
-                    onClick={() => markJobAsCompleted(selectedJob.id)}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
-                  >
-                    Mark as Completed
-                  </button>
-                )}
+      <div className="mt-4">
+        <button
+          onClick={() => updateJobDate(selectedJob.id, selectedJob.date)}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-200"
+        >
+          Save Date
+        </button>
+      </div>
 
-                {selectedJob.phone && (
-                  <a
-                    href={`sms:${selectedJob.phone}?body=This is Wegeners Sealing. We are on our way!`}
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-center transition-all duration-200"
-                  >
-                    Text: We're on our way!
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-        </Modal>
+      <div className="mt-6 flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={() => setIsModalOpen(false)}
+          className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all duration-200"
+        >
+          Close
+        </button>
+
+        {!selectedJob.completed && (
+          <button
+            onClick={() => markJobAsCompleted(selectedJob.id)}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
+          >
+            Mark as Completed
+          </button>
+        )}
+
+        {selectedJob.phone && (
+          <a
+            href={`sms:${selectedJob.phone}?body=This is Wegeners Sealing. We are on our way!`}
+            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-center transition-all duration-200"
+          >
+            Text: We're on our way!
+          </a>
+        )}
+      </div>
+    </div>
+  )}
+</Modal>
+
       </div>
     </div>
   );

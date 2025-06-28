@@ -34,11 +34,7 @@ const Header = () => {
 
   const NavLinks = () => (
     <>
-      <li>
-        <NavLink to="/subcontractor" className={linkClass}>
-          Subcontractor
-        </NavLink>
-      </li>
+      
       {currentUser ? (
         <>
           <li>
