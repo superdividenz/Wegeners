@@ -20,12 +20,11 @@ const Management = () => {
   const { register, handleSubmit, reset } = useForm();
 
     const companyInfo = {
-      name: "Wegener Asphalt",
-      address: "10200 Quail Run Dr. 63125",
-      phone: "314-300-6562",
-      logoUrl: "/img/logo+w+dropshadow-306w.webp",
-    };
-
+    name: 'Wegener Asphalt',
+    address: '10200 Quail Run Dr. 63125',
+    phone: '314-300-6562',
+    logoUrl: 'https://wegenersealing.com/static/media/Logo.62304cdaf1562a49d9ab.png',
+  };
 
   const fetchJobs = useCallback(async () => {
     try {
