@@ -25,19 +25,19 @@ const JobCard = ({
   const isDownloaded = downloadedJobs?.has(job.id) || false;
   const isArchived = archivedJobs?.has(job.id) || false;
 
-const handlePreviewPdf = async (e) => {
-  e.stopPropagation();
-  try {
-    const blob = await pdf(
-      <InvoicePDF job={job} companyInfo={companyInfo} />
-    ).toBlob();
-    const url = URL.createObjectURL(blob);
-    setPreviewUrl(url);
-    setShowPreview(true);
-  } catch (error) {
-    console.error('Error generating preview PDF:', error);
-  }
-};
+  const handlePreviewPdf = async (e) => {
+    e.stopPropagation();
+    try {
+      const blob = await pdf(
+        <InvoicePDF job={job} companyInfo={companyInfo} />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setShowPreview(true);
+    } catch (error) {
+      console.error('Error generating preview PDF:', error);
+    }
+  };
 
 
   return (
