@@ -301,9 +301,10 @@ const Dashboard = () => {
               }}
               defaultValue=""
             >
-              <option value="" disabled>
-                Undated Jobs ({undatedJobs.length})
+              <option value="" disabled className="font-bold text-red-600 uppercase">
+               🔴 UNDATED JOBS ❗ CALL TO SET UP! ({undatedJobs.length})
               </option>
+
               {undatedJobs.map((job) => (
                 <option key={job.id} value={job.id}>
                   {job.name} - {job.address || "No address"}
