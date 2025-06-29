@@ -31,32 +31,44 @@ const Dashboard = () => {
   setLoading(true);
   try {
     const jobsCollection = collection(db, "jobs");
-    const jobSnapshot = await getDocs(jobsCollection);
+    const usersCollection = collection(db, "users");
+
+    const [jobSnapshot, userSnapshot] = await Promise.all([
+      getDocs(jobsCollection),
+      getDocs(usersCollection),
+    ]);
+
     const jobListRaw = jobSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    // Fetch all users once
-    const usersCollection = collection(db, "users");
-    const userSnapshot = await getDocs(usersCollection);
     const usersMap = {};
     userSnapshot.docs.forEach((doc) => {
-      usersMap[doc.id] = doc.data().displayName || "Unknown";
+      const { displayName } = doc.data();
+      usersMap[doc.id] = displayName;
     });
 
-    // Attach claimerName to each job
     const jobList = jobListRaw.map((job) => ({
       ...job,
       claimerName: job.claimedBy ? usersMap[job.claimedBy] || "Unknown" : null,
     }));
 
-    const jobsWithDate = jobList.filter(
+    // 🔐 Only show jobs the user should see
+    let visibleJobs = jobList;
+    if (user?.role === "subcontractor") {
+      visibleJobs = jobList.filter(
+        (job) => !job.claimedBy || job.claimedBy === user.uid
+      );
+    }
+
+    const jobsWithDate = visibleJobs.filter(
       (job) => job.date && job.date.trim() !== ""
     );
-    const jobsWithoutDate = jobList.filter(
+    const jobsWithoutDate = visibleJobs.filter(
       (job) => !job.date || job.date.trim() === ""
     );
+
     setJobs(jobsWithDate);
     setUndatedJobs(jobsWithoutDate);
   } catch (error) {
@@ -65,8 +77,7 @@ const Dashboard = () => {
   } finally {
     setLoading(false);
   }
-}, []);
-
+}, [user?.role, user?.uid]); // ✅ Add dependencies here
 
   // Success Modal Component
   const SuccessModal = ({ message, onClose }) => (
